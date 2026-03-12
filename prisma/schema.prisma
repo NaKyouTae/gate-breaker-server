@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ItemType {
+  WEAPON
+  ARMOR
+  GLOVE
+  SHOE
+  RING
+  NECKLACE
+  MATERIAL
+  CONSUMABLE
+}
+
+enum Rarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+  MYTHIC
+}
+
+enum EquipSlot {
+  WEAPON
+  ARMOR
+  GLOVE
+  SHOE
+  RING
+  NECKLACE
+}
+
+enum BattleResult {
+  VICTORY
+  DEFEAT
+  ESCAPE
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ChannelStatus {
+  WAITING
+  IN_DUNGEON
+}
+
+enum ChannelMemberRole {
+  HOST
+  MEMBER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  loginId      String?  @unique @map("login_id") @db.VarChar(30)
+  email        String   @unique
+  password     String?
+  kakaoId      String?  @unique @map("kakao_id")
+  nickname     String   @unique @db.VarChar(20)
+  level        Int      @default(1)
+  exp          Int      @default(0)
+  gold         Int      @default(0)
+  hp           Int      @default(100)
+  maxHp        Int      @default(100) @map("max_hp")
+  mp           Int      @default(50)
+  maxMp        Int      @default(50) @map("max_mp")
+  attack       Int      @default(10)
+  defense      Int      @default(5)
+  criticalRate Float    @default(0.05) @map("critical_rate")
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  inventory      Inventory[]
+  battleLogs     BattleLog[]
+  channelMembers ChannelMember[]
+
+  @@map("user")
+}
+
+model Item {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(50)
+  type        ItemType
+  rarity      Rarity   @default(COMMON)
+  baseAttack  Int      @default(0) @map("base_attack")
+  baseDefense Int      @default(0) @map("base_defense")
+  baseHp      Int      @default(0) @map("base_hp")
+  description String?  @db.Text
+  sellPrice   Int      @default(0) @map("sell_price")
+  buyPrice    Int?     @map("buy_price")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  inventory  Inventory[]
+  dropTables DropTable[]
+
+  @@map("item")
+}
+
+model Inventory {
+  id           String     @id @default(uuid())
+  userId       String     @map("user_id")
+  itemId       String     @map("item_id")
+  enhanceLevel Int        @default(0) @map("enhance_level")
+  isEquipped   Boolean    @default(false) @map("is_equipped")
+  equippedSlot EquipSlot? @map("equipped_slot")
+  quantity     Int        @default(1)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@map("inventory")
+}
+
+model Dungeon {
+  id            String   @id @default(uuid())
+  name          String   @db.VarChar(50)
+  minLevel      Int      @map("min_level")
+  maxLevel      Int      @map("max_level")
+  rewardGoldMin Int      @map("reward_gold_min")
+  rewardGoldMax Int      @map("reward_gold_max")
+  rewardExp     Int      @map("reward_exp")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  monsters   Monster[]
+  battleLogs BattleLog[]
+  channels   Channel[]
+
+  @@map("dungeon")
+}
+
+model Monster {
+  id         String  @id @default(uuid())
+  name       String  @db.VarChar(50)
+  dungeonId  String  @map("dungeon_id")
+  hp         Int
+  attack     Int
+  defense    Int
+  expReward  Int     @map("exp_reward")
+  goldReward Int     @map("gold_reward")
+  isBoss     Boolean @default(false) @map("is_boss")
+
+  dungeon    Dungeon     @relation(fields: [dungeonId], references: [id])
+  dropTables DropTable[]
+
+  @@map("monster")
+}
+
+model DropTable {
+  id        String @id @default(uuid())
+  monsterId String @map("monster_id")
+  itemId    String @map("item_id")
+  dropRate  Float  @map("drop_rate")
+
+  monster Monster @relation(fields: [monsterId], references: [id])
+  item    Item    @relation(fields: [itemId], references: [id])
+
+  @@map("drop_table")
+}
+
+model BattleLog {
+  id         String       @id @default(uuid())
+  userId     String       @map("user_id")
+  dungeonId  String       @map("dungeon_id")
+  result     BattleResult
+  goldEarned Int          @default(0) @map("gold_earned")
+  expEarned  Int          @default(0) @map("exp_earned")
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id])
+  dungeon Dungeon @relation(fields: [dungeonId], references: [id])
+
+  @@map("battle_log")
+}
+
+model Channel {
+  id         String        @id @default(uuid())
+  name       String        @db.VarChar(30)
+  status     ChannelStatus @default(WAITING)
+  maxMembers Int           @default(4) @map("max_members")
+  dungeonId  String?       @map("dungeon_id")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  dungeon Dungeon?        @relation(fields: [dungeonId], references: [id])
+  members ChannelMember[]
+
+  @@map("channel")
+}
+
+model ChannelMember {
+  id        String            @id @default(uuid())
+  channelId String            @map("channel_id")
+  userId    String            @map("user_id")
+  role      ChannelMemberRole @default(MEMBER)
+  joinedAt  DateTime          @default(now()) @map("joined_at")
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([channelId, userId])
+  @@map("channel_member")
+}
+
+model GameConfig {
+  id          String   @id @default(uuid())
+  category    String
+  key         String
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@unique([category, key])
+  @@map("game_config")
+}
