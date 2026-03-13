@@ -19,6 +19,13 @@ export interface BattleRewards {
   items: string[];
 }
 
+export interface BattlePenalty {
+  previousExp: number;
+  expLost: number;
+  currentExp: number;
+  goldLost: number;
+}
+
 export interface BattleSession {
   id: string;
   userId: string;
@@ -48,6 +55,7 @@ export interface BattleSession {
   log: BattleLogEntry[];
   result: 'VICTORY' | 'DEFEAT' | 'ESCAPE' | null;
   rewards: BattleRewards | null;
+  penalty: BattlePenalty | null;
 }
 
 // Shared in-memory battle store
@@ -190,7 +198,7 @@ export class DungeonService {
         expReward: monster.expReward,
         goldReward: monster.goldReward,
       },
-      playerHp: user.maxHp + bonusHp,
+      playerHp: user.hp + bonusHp,
       playerMaxHp: user.maxHp + bonusHp,
       playerMp: user.maxMp,
       playerMaxMp: user.maxMp,
@@ -203,6 +211,7 @@ export class DungeonService {
       log: [{ message: `${dungeon.name}에서 ${monster.name}을(를) 만났다!`, type: 'system' as const, timestamp: Date.now() }],
       result: null,
       rewards: null,
+      penalty: null,
     };
 
     battleStore.set(`battle:${userId}`, session);

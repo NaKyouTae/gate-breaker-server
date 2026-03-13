@@ -131,6 +131,18 @@ export class BattleService {
       newDefense += statGrowth?.defensePerLevel ?? 1;
     }
 
+    // Calculate remaining base HP (without equipment bonus)
+    // bonusHp = session.playerMaxHp - user.maxHp (at session creation time)
+    // remainingBaseHp = session.playerHp - bonusHp
+    // If leveled up, add the HP gained from leveling
+    const hpGainFromLevelUp = newMaxHp - user.maxHp;
+    const bonusHp = session.playerMaxHp - user.maxHp;
+    const remainingBaseHp = session.playerHp - bonusHp + hpGainFromLevelUp;
+    const newHp = Math.min(Math.max(remainingBaseHp, 1), newMaxHp);
+
+    const mpGainFromLevelUp = newMaxMp - user.maxMp;
+    const newMp = Math.min(Math.max(user.mp + mpGainFromLevelUp, 1), newMaxMp);
+
     await this.prisma.user.update({
       where: { id: session.userId },
       data: {
@@ -138,9 +150,9 @@ export class BattleService {
         level: newLevel,
         gold: { increment: goldGained },
         maxHp: newMaxHp,
-        hp: newMaxHp,
+        hp: newHp,
         maxMp: newMaxMp,
-        mp: newMaxMp,
+        mp: newMp,
         attack: newAttack,
         defense: newDefense,
       },
@@ -176,13 +188,23 @@ export class BattleService {
 
     const defeatPenalty = this.gameConfigService.getCachedValue<{
       goldLossRate: number;
+      expLossRate: number;
     }>('battle', 'defeat_penalty');
-    const lossRate = defeatPenalty?.goldLossRate ?? 0.1;
-    const goldLost = Math.floor(user.gold * lossRate);
+    const goldLossRate = defeatPenalty?.goldLossRate ?? 0.1;
+    const expLossRate = defeatPenalty?.expLossRate ?? 0.1;
+    const goldLost = Math.floor(user.gold * goldLossRate);
+    const previousExp = user.exp;
+    const expLost = Math.floor(user.exp * expLossRate);
+    const currentExp = previousExp - expLost;
 
     await this.prisma.user.update({
       where: { id: session.userId },
-      data: { gold: { decrement: goldLost } },
+      data: {
+        gold: { decrement: goldLost },
+        exp: Math.max(currentExp, 0),
+        hp: user.maxHp,
+        mp: user.maxMp,
+      },
     });
 
     await this.prisma.battleLog.create({
@@ -191,15 +213,16 @@ export class BattleService {
         dungeonId: session.dungeonId,
         result: 'DEFEAT',
         goldEarned: -goldLost,
-        expEarned: 0,
+        expEarned: -expLost,
       },
     });
 
     // Store result in session instead of deleting
     session.result = 'DEFEAT';
     session.rewards = null;
+    session.penalty = { previousExp, expLost, currentExp: Math.max(currentExp, 0), goldLost };
 
-    return { goldLost };
+    return { goldLost, expLost };
   }
 
   async getStatus(userId: string) {
@@ -219,6 +242,7 @@ export class BattleService {
         battleLog: [],
         result: null,
         rewards: null,
+        penalty: null,
       };
     }
     return {
@@ -246,6 +270,7 @@ export class BattleService {
       log: session.log,
       result: session.result,
       rewards: session.rewards,
+      penalty: session.penalty,
     };
   }
 
@@ -560,6 +585,7 @@ export class BattleService {
       // Store result in session instead of deleting
       session.result = 'ESCAPE';
       session.rewards = null;
+      session.penalty = null;
 
       return {
         status: 'ESCAPE',
