@@ -46,7 +46,7 @@ export class AuthController {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
-    return res.redirect(`${frontendUrl}/auth/callback?${params.toString()}`);
+    return res.redirect(`${frontendUrl}/auth/kakao/callback?${params.toString()}`);
   }
 
   @Post('refresh')

@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsBoolean, IsOptional, IsUUID, Min } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsUUID, Min, Allow } from 'class-validator';
 
 export class UpdateMonsterDto {
   @IsString()
@@ -34,7 +34,7 @@ export class UpdateMonsterDto {
   @IsOptional()
   goldReward?: number;
 
-  @IsBoolean()
+  @Allow()
   @IsOptional()
-  isBoss?: boolean;
+  imageUrl?: string | null;
 }

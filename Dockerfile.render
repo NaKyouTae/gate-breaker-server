@@ -1,0 +1,47 @@
+# ── Build Stage ──
+FROM node:20-alpine AS builder
+
+RUN apk add --no-cache openssl
+RUN corepack enable && corepack prepare pnpm@10.17.0 --activate
+
+WORKDIR /build
+
+# 의존성 캐시 레이어
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Prisma 스키마 복사 및 generate
+COPY prisma prisma
+RUN pnpm prisma:generate
+
+# 소스 코드 복사 및 빌드
+COPY . .
+RUN pnpm build
+
+# ── Runtime Stage ──
+FROM node:20-alpine
+
+RUN apk add --no-cache curl openssl
+
+ENV TZ=Asia/Seoul
+
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+WORKDIR /app
+
+COPY --from=builder /build/dist ./dist
+COPY --from=builder /build/node_modules ./node_modules
+COPY --from=builder /build/package.json ./
+COPY --from=builder /build/prisma ./prisma
+
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
+EXPOSE 4000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:4000/ || exit 1
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]

@@ -10,11 +10,15 @@ import { CreateChannelDto } from './dto/create-channel.dto';
 
 const MAX_CHAT_MESSAGES = 50;
 
+export type ChatSystemMessageType = 'enhance' | 'dungeon-invite' | 'dungeon-start';
+
 export interface ChatMessage {
   userId: string;
   nickname: string;
   message: string;
   timestamp: number;
+  type?: ChatSystemMessageType;
+  data?: Record<string, unknown>;
 }
 
 @Injectable()
@@ -186,13 +190,40 @@ export class ChannelService {
       timestamp: Date.now(),
     };
 
-    await this.redis.pushWithLimit(
-      `channel:${channelId}:chat`,
-      JSON.stringify(chatMessage),
-      MAX_CHAT_MESSAGES,
-    );
+    await this.pushChannelMessage(channelId, chatMessage);
 
     return chatMessage;
+  }
+
+  /** 시스템 메시지 저장 (Redis, 최신 50개 유지) */
+  async addSystemMessage(
+    channelId: string,
+    userId: string,
+    type: ChatSystemMessageType,
+    data: Record<string, unknown>,
+    message = '',
+  ): Promise<ChatMessage> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { nickname: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    const systemMessage: ChatMessage = {
+      userId,
+      nickname: user.nickname,
+      message,
+      timestamp: Date.now(),
+      type,
+      data,
+    };
+
+    await this.pushChannelMessage(channelId, systemMessage);
+
+    return systemMessage;
   }
 
   /** 채팅 기록 조회 */
@@ -225,5 +256,16 @@ export class ChannelService {
     if (existing) {
       throw new BadRequestException('이미 다른 채널에 참가 중입니다.');
     }
+  }
+
+  private async pushChannelMessage(
+    channelId: string,
+    message: ChatMessage,
+  ): Promise<void> {
+    await this.redis.pushWithLimit(
+      `channel:${channelId}:chat`,
+      JSON.stringify(message),
+      MAX_CHAT_MESSAGES,
+    );
   }
 }

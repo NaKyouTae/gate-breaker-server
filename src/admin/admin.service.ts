@@ -81,7 +81,6 @@ export class AdminService {
   }
 
   async toggleBanUser(id: string) {
-    // isBanned field not yet added; return success placeholder
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id },
     });
@@ -146,12 +145,23 @@ export class AdminService {
     });
   }
 
+  async getMonsterById(id: string) {
+    return this.prisma.monster.findUnique({ where: { id } });
+  }
+
   async createMonster(dto: CreateMonsterDto) {
     return this.prisma.monster.create({ data: dto });
   }
 
   async updateMonster(id: string, dto: UpdateMonsterDto) {
     return this.prisma.monster.update({ where: { id }, data: dto });
+  }
+
+  async updateMonsterImage(id: string, imageUrl: string | null) {
+    return this.prisma.monster.update({
+      where: { id },
+      data: { imageUrl },
+    });
   }
 
   async deleteMonster(id: string) {
@@ -161,7 +171,13 @@ export class AdminService {
   // ============ ITEMS ============
 
   async getItems() {
-    return this.prisma.item.findMany({ orderBy: { name: 'asc' } });
+    return this.prisma.item.findMany({
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  async getItemById(id: string) {
+    return this.prisma.item.findUnique({ where: { id } });
   }
 
   async createItem(dto: CreateItemDto) {
@@ -170,6 +186,13 @@ export class AdminService {
 
   async updateItem(id: string, dto: UpdateItemDto) {
     return this.prisma.item.update({ where: { id }, data: dto });
+  }
+
+  async updateItemImage(id: string, imageUrl: string | null) {
+    return this.prisma.item.update({
+      where: { id },
+      data: { imageUrl },
+    });
   }
 
   async deleteItem(id: string) {
@@ -181,7 +204,7 @@ export class AdminService {
   async getShopItems() {
     return this.prisma.item.findMany({
       where: { buyPrice: { gt: 0 } },
-      orderBy: { name: 'asc' },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
     });
   }
 

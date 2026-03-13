@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsBoolean, IsOptional, IsUUID, Min } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsUUID, Min } from 'class-validator';
 
 export class CreateMonsterDto {
   @IsString()
@@ -27,7 +27,4 @@ export class CreateMonsterDto {
   @Min(0)
   goldReward: number;
 
-  @IsBoolean()
-  @IsOptional()
-  isBoss?: boolean;
 }

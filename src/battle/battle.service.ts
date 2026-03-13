@@ -153,7 +153,7 @@ export class BattleService {
     });
 
     // Store result in session instead of deleting
-    session.result = 'victory';
+    session.result = 'VICTORY';
     session.rewards = {
       exp: expGained,
       gold: goldGained,
@@ -191,7 +191,7 @@ export class BattleService {
     });
 
     // Store result in session instead of deleting
-    session.result = 'defeat';
+    session.result = 'DEFEAT';
     session.rewards = null;
 
     return { goldLost };
@@ -218,16 +218,26 @@ export class BattleService {
     }
     return {
       isInBattle: true,
+      id: session.id,
+      userId: session.userId,
       dungeonId: session.dungeonId,
-      currentMonster: session.monster,
+      monster: {
+        name: session.monster.name,
+        hp: session.monster.hp,
+        attack: session.monster.attack,
+        defense: session.monster.defense,
+      },
       playerHp: session.playerHp,
       playerMaxHp: session.playerMaxHp,
       playerMp: session.playerMp,
       playerMaxMp: session.playerMaxMp,
+      playerAttack: session.playerAttack,
+      playerDefense: session.playerDefense,
+      playerCriticalRate: session.playerCriticalRate,
       enemyHp: session.enemyHp,
       enemyMaxHp: session.enemyMaxHp,
       isPlayerTurn: session.isPlayerTurn,
-      battleLog: session.log,
+      log: session.log,
       result: session.result,
       rewards: session.rewards,
     };
@@ -542,7 +552,7 @@ export class BattleService {
       });
 
       // Store result in session instead of deleting
-      session.result = 'escape';
+      session.result = 'ESCAPE';
       session.rewards = null;
 
       return {

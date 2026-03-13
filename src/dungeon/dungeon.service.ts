@@ -31,7 +31,6 @@ export interface BattleSession {
     defense: number;
     expReward: number;
     goldReward: number;
-    isBoss: boolean;
   };
   playerHp: number;
   playerMaxHp: number;
@@ -44,7 +43,7 @@ export interface BattleSession {
   enemyMaxHp: number;
   isPlayerTurn: boolean;
   log: BattleLogEntry[];
-  result: 'victory' | 'defeat' | 'escape' | null;
+  result: 'VICTORY' | 'DEFEAT' | 'ESCAPE' | null;
   rewards: BattleRewards | null;
 }
 
@@ -98,7 +97,6 @@ export class DungeonService {
             hp: existingBattle.monster.hp,
             attack: existingBattle.monster.attack,
             defense: existingBattle.monster.defense,
-            isBoss: existingBattle.monster.isBoss,
           },
           dungeon: { name: '' },
           playerHp: existingBattle.playerHp,
@@ -169,7 +167,6 @@ export class DungeonService {
         defense: monster.defense,
         expReward: monster.expReward,
         goldReward: monster.goldReward,
-        isBoss: monster.isBoss,
       },
       playerHp: user.maxHp + bonusHp,
       playerMaxHp: user.maxHp + bonusHp,
@@ -195,7 +192,6 @@ export class DungeonService {
         hp: monster.hp,
         attack: monster.attack,
         defense: monster.defense,
-        isBoss: monster.isBoss,
       },
       dungeon: {
         name: dungeon.name,

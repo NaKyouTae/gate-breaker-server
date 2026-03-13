@@ -87,12 +87,14 @@ model User {
 model Item {
   id          String   @id @default(uuid())
   name        String   @db.VarChar(50)
+  category    String   @default("기타") @db.VarChar(30)
   type        ItemType
   rarity      Rarity   @default(COMMON)
   baseAttack  Int      @default(0) @map("base_attack")
   baseDefense Int      @default(0) @map("base_defense")
   baseHp      Int      @default(0) @map("base_hp")
   description String?  @db.Text
+  imageUrl    String?  @map("image_url")
   sellPrice   Int      @default(0) @map("sell_price")
   buyPrice    Int?     @map("buy_price")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -145,7 +147,7 @@ model Monster {
   defense    Int
   expReward  Int     @map("exp_reward")
   goldReward Int     @map("gold_reward")
-  isBoss     Boolean @default(false) @map("is_boss")
+  imageUrl   String? @map("image_url")
 
   dungeon    Dungeon     @relation(fields: [dungeonId], references: [id])
   dropTables DropTable[]

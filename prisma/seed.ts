@@ -19,6 +19,7 @@ async function main() {
   const rustyWord = await prisma.item.create({
     data: {
       name: '녹슨 검',
+      category: '무기',
       type: ItemType.WEAPON,
       rarity: Rarity.COMMON,
       baseAttack: 5,
@@ -33,6 +34,7 @@ async function main() {
   const ironSword = await prisma.item.create({
     data: {
       name: '철검',
+      category: '무기',
       type: ItemType.WEAPON,
       rarity: Rarity.RARE,
       baseAttack: 15,
@@ -47,6 +49,7 @@ async function main() {
   const mithrilSword = await prisma.item.create({
     data: {
       name: '미스릴 검',
+      category: '무기',
       type: ItemType.WEAPON,
       rarity: Rarity.EPIC,
       baseAttack: 30,
@@ -61,6 +64,7 @@ async function main() {
   const dragonSword = await prisma.item.create({
     data: {
       name: '용의 검',
+      category: '무기',
       type: ItemType.WEAPON,
       rarity: Rarity.LEGENDARY,
       baseAttack: 60,
@@ -76,6 +80,7 @@ async function main() {
   const leatherArmor = await prisma.item.create({
     data: {
       name: '가죽 갑옷',
+      category: '방어구',
       type: ItemType.ARMOR,
       rarity: Rarity.COMMON,
       baseAttack: 0,
@@ -90,6 +95,7 @@ async function main() {
   const ironArmor = await prisma.item.create({
     data: {
       name: '철갑옷',
+      category: '방어구',
       type: ItemType.ARMOR,
       rarity: Rarity.RARE,
       baseAttack: 0,
@@ -104,6 +110,7 @@ async function main() {
   const mithrilArmor = await prisma.item.create({
     data: {
       name: '미스릴 갑옷',
+      category: '방어구',
       type: ItemType.ARMOR,
       rarity: Rarity.EPIC,
       baseAttack: 0,
@@ -119,6 +126,7 @@ async function main() {
   const hpPotion = await prisma.item.create({
     data: {
       name: 'HP 포션',
+      category: '소모품',
       type: ItemType.CONSUMABLE,
       rarity: Rarity.COMMON,
       baseAttack: 0,
@@ -133,6 +141,7 @@ async function main() {
   const mpPotion = await prisma.item.create({
     data: {
       name: 'MP 포션',
+      category: '소모품',
       type: ItemType.CONSUMABLE,
       rarity: Rarity.COMMON,
       baseAttack: 0,
@@ -147,6 +156,7 @@ async function main() {
   const superHpPotion = await prisma.item.create({
     data: {
       name: '고급 HP 포션',
+      category: '소모품',
       type: ItemType.CONSUMABLE,
       rarity: Rarity.RARE,
       baseAttack: 0,
@@ -162,6 +172,7 @@ async function main() {
   const slimeGel = await prisma.item.create({
     data: {
       name: '슬라임 점액',
+      category: '재료',
       type: ItemType.MATERIAL,
       rarity: Rarity.COMMON,
       baseAttack: 0,
@@ -176,6 +187,7 @@ async function main() {
   const goblinTooth = await prisma.item.create({
     data: {
       name: '고블린 이빨',
+      category: '재료',
       type: ItemType.MATERIAL,
       rarity: Rarity.COMMON,
       baseAttack: 0,
@@ -190,6 +202,7 @@ async function main() {
   const enhanceStone = await prisma.item.create({
     data: {
       name: '강화석',
+      category: '재료',
       type: ItemType.MATERIAL,
       rarity: Rarity.RARE,
       baseAttack: 0,
@@ -224,7 +237,7 @@ async function main() {
       defense: 2,
       expReward: 15,
       goldReward: 10,
-      isBoss: false,
+
     },
   });
 
@@ -237,7 +250,7 @@ async function main() {
       defense: 5,
       expReward: 50,
       goldReward: 40,
-      isBoss: true,
+
     },
   });
 
@@ -262,7 +275,7 @@ async function main() {
       defense: 5,
       expReward: 30,
       goldReward: 20,
-      isBoss: false,
+
     },
   });
 
@@ -275,7 +288,7 @@ async function main() {
       defense: 3,
       expReward: 35,
       goldReward: 25,
-      isBoss: false,
+
     },
   });
 
@@ -288,7 +301,7 @@ async function main() {
       defense: 10,
       expReward: 100,
       goldReward: 80,
-      isBoss: true,
+
     },
   });
 
@@ -313,7 +326,7 @@ async function main() {
       defense: 12,
       expReward: 60,
       goldReward: 50,
-      isBoss: false,
+
     },
   });
 
@@ -326,7 +339,7 @@ async function main() {
       defense: 20,
       expReward: 200,
       goldReward: 150,
-      isBoss: true,
+
     },
   });
 
@@ -351,7 +364,7 @@ async function main() {
       defense: 8,
       expReward: 100,
       goldReward: 80,
-      isBoss: false,
+
     },
   });
 
@@ -364,7 +377,7 @@ async function main() {
       defense: 25,
       expReward: 400,
       goldReward: 300,
-      isBoss: true,
+
     },
   });
 
@@ -389,7 +402,7 @@ async function main() {
       defense: 30,
       expReward: 250,
       goldReward: 200,
-      isBoss: false,
+
     },
   });
 
@@ -402,7 +415,7 @@ async function main() {
       defense: 40,
       expReward: 1000,
       goldReward: 800,
-      isBoss: true,
+
     },
   });
 

@@ -16,7 +16,7 @@ export class ShopService {
       where: {
         buyPrice: { not: null, gt: 0 },
       },
-      orderBy: [{ type: 'asc' }, { buyPrice: 'asc' }],
+      orderBy: [{ category: 'asc' }, { type: 'asc' }, { buyPrice: 'asc' }],
     });
   }
 

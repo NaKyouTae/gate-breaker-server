@@ -99,23 +99,21 @@ export class UserService {
     return {
       base: {
         hp: user.hp,
-        maxHp: user.maxHp,
         mp: user.mp,
-        maxMp: user.maxMp,
         attack: user.attack,
         defense: user.defense,
         criticalRate: user.criticalRate,
       },
-      equipment: {
-        bonusAttack,
-        bonusDefense,
-        bonusHp,
+      bonuses: {
+        hp: bonusHp,
+        mp: 0,
+        attack: bonusAttack,
+        defense: bonusDefense,
+        criticalRate: 0,
       },
       total: {
         hp: user.hp + bonusHp,
-        maxHp: user.maxHp + bonusHp,
         mp: user.mp,
-        maxMp: user.maxMp,
         attack: user.attack + bonusAttack,
         defense: user.defense + bonusDefense,
         criticalRate: user.criticalRate,

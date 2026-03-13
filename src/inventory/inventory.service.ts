@@ -29,14 +29,7 @@ export class InventoryService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return inventories.map((inv) => ({
-      ...inv,
-      item: {
-        ...inv.item,
-        type: inv.item.type.toLowerCase(),
-        rarity: inv.item.rarity.toLowerCase(),
-      },
-    }));
+    return inventories;
   }
 
   async equip(userId: string, equipDto: EquipDto) {

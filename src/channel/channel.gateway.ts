@@ -232,17 +232,14 @@ export class ChannelGateway
 
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { nickname: true, gold: true },
+        select: { gold: true },
       });
 
-      const systemMessage = {
-        channelId: data.channelId,
+      const systemMessage = await this.channelService.addSystemMessage(
+        data.channelId,
         userId,
-        nickname: user?.nickname ?? '???',
-        message: '',
-        timestamp: Date.now(),
-        type: 'enhance' as const,
-        data: {
+        'enhance',
+        {
           success: result.success,
           message: result.message,
           enhanceLevel: result.enhanceLevel,
@@ -251,9 +248,12 @@ export class ChannelGateway
           remainingGold: user?.gold ?? 0,
           destroyed: (result as any).destroyed ?? false,
         },
-      };
+      );
 
-      this.server.to(data.channelId).emit('channel:system', systemMessage);
+      this.server.to(data.channelId).emit('channel:system', {
+        channelId: data.channelId,
+        ...systemMessage,
+      });
 
       return { event: 'channel:enhance-done', data: result };
     } catch (error: any) {
@@ -361,14 +361,16 @@ export class ChannelGateway
       this.dungeonInvites.set(inviteId, invite);
 
       // 채널에 던전 초대 시스템 메시지 전송
+      const systemMessage = await this.channelService.addSystemMessage(
+        data.channelId,
+        userId,
+        'dungeon-invite',
+        invite as unknown as Record<string, unknown>,
+      );
+
       this.server.to(data.channelId).emit('channel:system', {
         channelId: data.channelId,
-        userId,
-        nickname: user?.nickname ?? '???',
-        message: '',
-        timestamp: Date.now(),
-        type: 'dungeon-invite' as const,
-        data: invite,
+        ...systemMessage,
       });
 
       return { event: 'channel:dungeon-invite-created', data: invite };
@@ -510,6 +512,26 @@ export class ChannelGateway
       }
 
       this.dungeonInvites.delete(data.inviteId);
+
+      const systemMessage = await this.channelService.addSystemMessage(
+        data.channelId,
+        userId,
+        'dungeon-start',
+        {
+          dungeonName: invite.dungeonName,
+          hostNickname: invite.hostNickname,
+          totalParticipants: invite.participants.length,
+          successCount: results.length,
+          failCount: errors.length,
+          results,
+          errors,
+        },
+      );
+
+      this.server.to(data.channelId).emit('channel:system', {
+        channelId: data.channelId,
+        ...systemMessage,
+      });
 
       // 던전 시작 알림 브로드캐스트
       this.server.to(data.channelId).emit('channel:dungeon-started', {

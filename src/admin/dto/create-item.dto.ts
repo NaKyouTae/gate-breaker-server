@@ -5,6 +5,10 @@ export class CreateItemDto {
   @IsString()
   name: string;
 
+  @IsString()
+  @IsOptional()
+  category?: string;
+
   @IsEnum(ItemType)
   type: ItemType;
 

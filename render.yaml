@@ -1,0 +1,50 @@
+services:
+  # ── NestJS Backend ──
+  - type: web
+    name: gate-breaker-server
+    env: docker
+    region: singapore
+    plan: starter
+    branch: main
+    autoDeploy: true
+    dockerfilePath: ./Dockerfile.render
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: "4000"
+      # Supabase PostgreSQL (Dashboard에서 직접 입력)
+      - key: DATABASE_URL
+        sync: false
+      # JWT 시크릿 (Dashboard에서 직접 입력)
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      # Kakao OAuth (Dashboard에서 직접 입력)
+      - key: KAKAO_CLIENT_ID
+        sync: false
+      - key: KAKAO_CLIENT_SECRET
+        sync: false
+      - key: KAKAO_ADMIN_KEY
+        sync: false
+      - key: KAKAO_REDIRECT_URI
+        sync: false
+      # 프론트엔드 URL (Vercel 도메인)
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      # Redis 연결 (Key Value 서비스에서 자동 주입)
+      - key: REDIS_URL
+        fromService:
+          name: gate-breaker-redis
+          type: redis
+          property: connectionString
+
+  # ── Redis (Key Value Store) ──
+  - type: redis
+    name: gate-breaker-redis
+    region: singapore
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []

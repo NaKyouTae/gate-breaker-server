@@ -8,10 +8,14 @@ import {
   Query,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminService } from './admin.service';
+import { UploadService } from '../upload/upload.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { CreateDungeonDto } from './dto/create-dungeon.dto';
@@ -27,7 +31,10 @@ import { UpdateShopDto } from './dto/update-shop.dto';
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   // ============ DASHBOARD ============
 
@@ -112,6 +119,29 @@ export class AdminController {
     return this.adminService.deleteMonster(id);
   }
 
+  @Post('monsters/:id/image')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadMonsterImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const monster = await this.adminService.getMonsterById(id);
+    if (monster?.imageUrl) {
+      await this.uploadService.deleteImage(monster.imageUrl);
+    }
+    const imageUrl = await this.uploadService.uploadImage(file, 'monsters');
+    return this.adminService.updateMonsterImage(id, imageUrl);
+  }
+
+  @Delete('monsters/:id/image')
+  async deleteMonsterImage(@Param('id') id: string) {
+    const monster = await this.adminService.getMonsterById(id);
+    if (monster?.imageUrl) {
+      await this.uploadService.deleteImage(monster.imageUrl);
+    }
+    return this.adminService.updateMonsterImage(id, null);
+  }
+
   // ============ ITEMS ============
 
   @Get('items')
@@ -132,6 +162,29 @@ export class AdminController {
   @Delete('items/:id')
   deleteItem(@Param('id') id: string) {
     return this.adminService.deleteItem(id);
+  }
+
+  @Post('items/:id/image')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadItemImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const item = await this.adminService.getItemById(id);
+    if (item?.imageUrl) {
+      await this.uploadService.deleteImage(item.imageUrl);
+    }
+    const imageUrl = await this.uploadService.uploadImage(file, 'items');
+    return this.adminService.updateItemImage(id, imageUrl);
+  }
+
+  @Delete('items/:id/image')
+  async deleteItemImage(@Param('id') id: string) {
+    const item = await this.adminService.getItemById(id);
+    if (item?.imageUrl) {
+      await this.uploadService.deleteImage(item.imageUrl);
+    }
+    return this.adminService.updateItemImage(id, null);
   }
 
   // ============ SHOP ============
