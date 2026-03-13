@@ -34,17 +34,6 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
-      # Redis 연결 (Key Value 서비스에서 자동 주입)
+      # Redis 연결 (기존 workfolio Redis 공유, Dashboard에서 직접 입력)
       - key: REDIS_URL
-        fromService:
-          name: gate-breaker-redis
-          type: redis
-          property: connectionString
-
-  # ── Redis (Key Value Store) ──
-  - type: redis
-    name: gate-breaker-redis
-    region: singapore
-    plan: free
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
+        sync: false
