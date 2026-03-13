@@ -87,7 +87,7 @@ export class AuthService {
         attack: 10,
         defense: 5,
         criticalRate: 0.05,
-        gold: 500,
+        gold: 1000,
       },
     });
 
@@ -253,7 +253,7 @@ export class AuthService {
           attack: 10,
           defense: 5,
           criticalRate: 0.05,
-          gold: 500,
+          gold: 1000,
         },
       });
     }

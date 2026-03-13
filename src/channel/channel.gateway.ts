@@ -123,8 +123,26 @@ export class ChannelGateway
         });
       }
 
-      // Socket.io Room에 join
-      client.join(data.channelId);
+      // 새 멤버 입장 시스템 메시지 저장 및 브로드캐스트
+      if (!existingMember) {
+        const joinMessage = await this.channelService.addSystemMessage(
+          data.channelId,
+          userId,
+          'join',
+          {},
+        );
+
+        // Socket.io Room에 join (브로드캐스트 전에 join해야 본인도 받음)
+        client.join(data.channelId);
+
+        this.server.to(data.channelId).emit('channel:system', {
+          channelId: data.channelId,
+          ...joinMessage,
+        });
+      } else {
+        // Socket.io Room에 join
+        client.join(data.channelId);
+      }
 
       // 입장한 유저에게 채팅 기록 전송
       const chatHistory = await this.channelService.getChatHistory(

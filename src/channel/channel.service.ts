@@ -10,7 +10,7 @@ import { CreateChannelDto } from './dto/create-channel.dto';
 
 const MAX_CHAT_MESSAGES = 50;
 
-export type ChatSystemMessageType = 'enhance' | 'dungeon-invite' | 'dungeon-start';
+export type ChatSystemMessageType = 'enhance' | 'dungeon-invite' | 'dungeon-start' | 'join';
 
 export interface ChatMessage {
   userId: string;

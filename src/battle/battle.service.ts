@@ -131,17 +131,21 @@ export class BattleService {
       newDefense += statGrowth?.defensePerLevel ?? 1;
     }
 
-    // Calculate remaining base HP (without equipment bonus)
-    // bonusHp = session.playerMaxHp - user.maxHp (at session creation time)
-    // remainingBaseHp = session.playerHp - bonusHp
-    // If leveled up, add the HP gained from leveling
-    const hpGainFromLevelUp = newMaxHp - user.maxHp;
-    const bonusHp = session.playerMaxHp - user.maxHp;
-    const remainingBaseHp = session.playerHp - bonusHp + hpGainFromLevelUp;
-    const newHp = Math.min(Math.max(remainingBaseHp, 1), newMaxHp);
+    // Calculate HP/MP after battle
+    let newHp: number;
+    let newMp: number;
 
-    const mpGainFromLevelUp = newMaxMp - user.maxMp;
-    const newMp = Math.min(Math.max(user.mp + mpGainFromLevelUp, 1), newMaxMp);
+    if (leveledUp) {
+      // Level up: restore HP/MP to full
+      newHp = newMaxHp;
+      newMp = newMaxMp;
+    } else {
+      // No level up: preserve remaining HP/MP
+      const bonusHp = session.playerMaxHp - user.maxHp;
+      const remainingBaseHp = session.playerHp - bonusHp;
+      newHp = Math.min(Math.max(remainingBaseHp, 1), newMaxHp);
+      newMp = Math.min(Math.max(user.mp, 1), newMaxMp);
+    }
 
     await this.prisma.user.update({
       where: { id: session.userId },
