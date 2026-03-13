@@ -1,4 +1,5 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Body, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -24,7 +25,20 @@ export class UserController {
 
   @Get('me/stats')
   async getStats(@CurrentUser('userId') userId: string) {
-    // TODO: Return total stats including equipment bonuses
     return this.userService.getStatsWithEquipment(userId);
+  }
+
+  @Post('me/profile-image')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadProfileImage(
+    @CurrentUser('userId') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.userService.uploadProfileImage(userId, file);
+  }
+
+  @Delete('me/profile-image')
+  async deleteProfileImage(@CurrentUser('userId') userId: string) {
+    return this.userService.deleteProfileImage(userId);
   }
 }

@@ -6,7 +6,12 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { BattleEngine } from './battle.engine';
 import { GameConfigService } from '../game-config/game-config.service';
-import { battleStore, BattleSession, BattleLogEntry } from '../dungeon/dungeon.service';
+import {
+  battleStore,
+  BattleSession,
+  BattleLogEntry,
+  getBattleSessionFromStore,
+} from '../dungeon/dungeon.service';
 import { ItemType } from '@prisma/client';
 
 @Injectable()
@@ -22,7 +27,7 @@ export class BattleService {
   }
 
   private getSession(userId: string): BattleSession {
-    const session = battleStore.get(`battle:${userId}`);
+    const session = getBattleSessionFromStore(userId);
     if (!session) {
       throw new NotFoundException('진행 중인 전투가 없습니다.');
     }
@@ -198,7 +203,7 @@ export class BattleService {
   }
 
   async getStatus(userId: string) {
-    const session = battleStore.get(`battle:${userId}`);
+    const session = getBattleSessionFromStore(userId);
     if (!session) {
       return {
         isInBattle: false,
@@ -223,6 +228,7 @@ export class BattleService {
       dungeonId: session.dungeonId,
       monster: {
         name: session.monster.name,
+        imageUrl: session.monster.imageUrl,
         hp: session.monster.hp,
         attack: session.monster.attack,
         defense: session.monster.defense,
@@ -244,7 +250,7 @@ export class BattleService {
   }
 
   async confirmResult(userId: string) {
-    const session = battleStore.get(`battle:${userId}`);
+    const session = getBattleSessionFromStore(userId);
     if (!session || !session.result) {
       throw new BadRequestException('확인할 전투 결과가 없습니다.');
     }

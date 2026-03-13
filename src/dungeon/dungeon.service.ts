@@ -23,9 +23,12 @@ export interface BattleSession {
   id: string;
   userId: string;
   dungeonId: string;
+  startedAt: number;
+  expiresAt: number;
   monster: {
     id: string;
     name: string;
+    imageUrl?: string | null;
     hp: number;
     attack: number;
     defense: number;
@@ -49,6 +52,20 @@ export interface BattleSession {
 
 // Shared in-memory battle store
 export const battleStore = new Map<string, BattleSession>();
+export const BATTLE_SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+export function getBattleSessionFromStore(userId: string): BattleSession | null {
+  const key = `battle:${userId}`;
+  const session = battleStore.get(key);
+  if (!session) return null;
+
+  if (Date.now() > session.expiresAt) {
+    battleStore.delete(key);
+    return null;
+  }
+
+  return session;
+}
 
 @Injectable()
 export class DungeonService {
@@ -83,7 +100,7 @@ export class DungeonService {
 
   async enter(userId: string, dungeonId: string) {
     // If user already has an active battle
-    const existingBattle = battleStore.get(`battle:${userId}`);
+    const existingBattle = getBattleSessionFromStore(userId);
     if (existingBattle) {
       // If battle already ended, clean up and allow new entry
       if (existingBattle.result) {
@@ -94,6 +111,7 @@ export class DungeonService {
           battleId: existingBattle.id,
           monster: {
             name: existingBattle.monster.name,
+            imageUrl: existingBattle.monster.imageUrl,
             hp: existingBattle.monster.hp,
             attack: existingBattle.monster.attack,
             defense: existingBattle.monster.defense,
@@ -155,13 +173,17 @@ export class DungeonService {
     }
 
     const battleId = randomUUID();
+    const startedAt = Date.now();
     const session: BattleSession = {
       id: battleId,
       userId,
       dungeonId,
+      startedAt,
+      expiresAt: startedAt + BATTLE_SESSION_TTL_MS,
       monster: {
         id: monster.id,
         name: monster.name,
+        imageUrl: monster.imageUrl,
         hp: monster.hp,
         attack: monster.attack,
         defense: monster.defense,
@@ -189,6 +211,7 @@ export class DungeonService {
       battleId,
       monster: {
         name: monster.name,
+        imageUrl: monster.imageUrl,
         hp: monster.hp,
         attack: monster.attack,
         defense: monster.defense,

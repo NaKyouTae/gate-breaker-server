@@ -34,7 +34,7 @@ export class ChannelService {
       where: { status: 'WAITING' },
       include: {
         members: {
-          include: { user: { select: { id: true, nickname: true, level: true } } },
+          include: { user: { select: { id: true, nickname: true, level: true, profileImageUrl: true } } },
         },
         dungeon: { select: { id: true, name: true, minLevel: true, maxLevel: true } },
       },
@@ -51,7 +51,7 @@ export class ChannelService {
       },
       include: {
         members: {
-          include: { user: { select: { id: true, nickname: true, level: true } } },
+          include: { user: { select: { id: true, nickname: true, level: true, profileImageUrl: true } } },
         },
         dungeon: { select: { id: true, name: true, minLevel: true, maxLevel: true } },
       },
@@ -66,7 +66,7 @@ export class ChannelService {
       where: { id: channelId },
       include: {
         members: {
-          include: { user: { select: { id: true, nickname: true, level: true } } },
+          include: { user: { select: { id: true, nickname: true, level: true, profileImageUrl: true } } },
         },
         dungeon: { select: { id: true, name: true, minLevel: true, maxLevel: true } },
       },
@@ -94,7 +94,7 @@ export class ChannelService {
       },
       include: {
         members: {
-          include: { user: { select: { id: true, nickname: true, level: true } } },
+          include: { user: { select: { id: true, nickname: true, level: true, profileImageUrl: true } } },
         },
       },
     });

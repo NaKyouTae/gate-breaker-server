@@ -72,9 +72,10 @@ model User {
   maxMp        Int      @default(50) @map("max_mp")
   attack       Int      @default(10)
   defense      Int      @default(5)
-  criticalRate Float    @default(0.05) @map("critical_rate")
-  role         Role     @default(USER)
-  createdAt    DateTime @default(now()) @map("created_at")
+  criticalRate    Float    @default(0.05) @map("critical_rate")
+  profileImageUrl String?  @map("profile_image_url")
+  role            Role     @default(USER)
+  createdAt       DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   inventory      Inventory[]

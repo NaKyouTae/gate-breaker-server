@@ -1,6 +1,8 @@
 import {
   Injectable,
+  BadRequestException,
   ConflictException,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -135,35 +137,77 @@ export class AuthService {
   }
 
   async kakaoLogin(code: string, redirectUri: string) {
+    if (!code) {
+      throw new BadRequestException('카카오 인가 코드가 없습니다.');
+    }
+
+    const clientId = process.env.KAKAO_CLIENT_ID || '';
+    if (!clientId) {
+      throw new InternalServerErrorException('KAKAO_CLIENT_ID가 설정되지 않았습니다.');
+    }
+
+    const tokenParams = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      code,
+    });
+
+    const clientSecret = process.env.KAKAO_CLIENT_SECRET;
+    if (clientSecret && clientSecret.trim().length > 0) {
+      tokenParams.set('client_secret', clientSecret);
+    }
+
     // 1. 인가코드로 카카오 토큰 발급
-    const tokenResponse = await axios.post(
-      'https://kauth.kakao.com/oauth/token',
-      new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: process.env.KAKAO_CLIENT_ID || '',
-        client_secret: process.env.KAKAO_CLIENT_SECRET || '',
-        redirect_uri: redirectUri,
-        code,
-      }).toString(),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+    let tokenResponse: { data: { access_token?: string } };
+    try {
+      tokenResponse = await axios.post(
+        'https://kauth.kakao.com/oauth/token',
+        tokenParams.toString(),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+          },
         },
-      },
-    );
+      );
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const details =
+          (error.response?.data as { error_description?: string; error?: string } | undefined)
+            ?.error_description ||
+          (error.response?.data as { error?: string } | undefined)?.error ||
+          error.message;
+        throw new BadRequestException(`카카오 토큰 요청 실패: ${details}`);
+      }
+      throw error;
+    }
 
     const kakaoAccessToken = tokenResponse.data.access_token;
+    if (!kakaoAccessToken) {
+      throw new BadRequestException('카카오 액세스 토큰이 응답에 없습니다.');
+    }
 
     // 2. 카카오 사용자 정보 조회
-    const userInfoResponse = await axios.get(
-      'https://kapi.kakao.com/v2/user/me',
-      {
-        headers: {
-          Authorization: `Bearer ${kakaoAccessToken}`,
-          'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+    let userInfoResponse: { data: any };
+    try {
+      userInfoResponse = await axios.get(
+        'https://kapi.kakao.com/v2/user/me',
+        {
+          headers: {
+            Authorization: `Bearer ${kakaoAccessToken}`,
+            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+          },
         },
-      },
-    );
+      );
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const details =
+          (error.response?.data as { msg?: string; code?: number } | undefined)?.msg ||
+          error.message;
+        throw new BadRequestException(`카카오 사용자 정보 조회 실패: ${details}`);
+      }
+      throw error;
+    }
 
     const kakaoUser = userInfoResponse.data;
     const kakaoId = String(kakaoUser.id);

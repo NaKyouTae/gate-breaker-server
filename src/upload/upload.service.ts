@@ -147,12 +147,14 @@ export class UploadService {
 
   private async uploadViaS3(filePath: string, file: Express.Multer.File): Promise<void> {
     const endpoint = this.s3Endpoint!;
-    const objectUrl = `${endpoint.replace(/\/$/, '')}/${this.bucket}/${this.encodeObjectKey(filePath)}`;
+    const encodedKey = this.encodeObjectKey(filePath);
+    const objectUrl = `${endpoint.replace(/\/$/, '')}/${this.bucket}/${encodedKey}`;
     const payloadHash = this.sha256Hex(file.buffer);
     const now = new Date();
     const amzDate = this.toAmzDate(now);
     const dateStamp = this.toDateStamp(now);
-    const host = new URL(endpoint).host;
+    const parsedUrl = new URL(objectUrl);
+    const host = parsedUrl.host;
 
     const headers: Record<string, string> = {
       host,
@@ -163,7 +165,7 @@ export class UploadService {
 
     const authorization = this.buildAuthHeader({
       method: 'PUT',
-      canonicalUri: `/${this.bucket}/${this.encodeObjectKey(filePath)}`,
+      canonicalUri: parsedUrl.pathname,
       headers,
       payloadHash,
       amzDate,
@@ -195,7 +197,8 @@ export class UploadService {
     const now = new Date();
     const amzDate = this.toAmzDate(now);
     const dateStamp = this.toDateStamp(now);
-    const host = new URL(endpoint).host;
+    const parsedUrl = new URL(objectUrl);
+    const host = parsedUrl.host;
 
     const headers: Record<string, string> = {
       host,
@@ -205,7 +208,7 @@ export class UploadService {
 
     const authorization = this.buildAuthHeader({
       method: 'DELETE',
-      canonicalUri: `/${this.bucket}/${encodedKey}`,
+      canonicalUri: parsedUrl.pathname,
       headers,
       payloadHash,
       amzDate,

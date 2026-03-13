@@ -1,31 +1,38 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadService } from '../upload/upload.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+
+const USER_SELECT = {
+  id: true,
+  email: true,
+  nickname: true,
+  level: true,
+  exp: true,
+  gold: true,
+  hp: true,
+  maxHp: true,
+  mp: true,
+  maxMp: true,
+  attack: true,
+  defense: true,
+  criticalRate: true,
+  profileImageUrl: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   async findById(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        nickname: true,
-        level: true,
-        exp: true,
-        gold: true,
-        hp: true,
-        maxHp: true,
-        mp: true,
-        maxMp: true,
-        attack: true,
-        defense: true,
-        criticalRate: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USER_SELECT,
     });
 
     if (!user) {
@@ -49,26 +56,52 @@ export class UserService {
       data: {
         ...(updateUserDto.nickname && { nickname: updateUserDto.nickname }),
       },
-      select: {
-        id: true,
-        email: true,
-        nickname: true,
-        level: true,
-        exp: true,
-        gold: true,
-        hp: true,
-        maxHp: true,
-        mp: true,
-        maxMp: true,
-        attack: true,
-        defense: true,
-        criticalRate: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: USER_SELECT,
     });
 
     return updated;
+  }
+
+  async uploadProfileImage(userId: string, file: Express.Multer.File) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    if (user.profileImageUrl) {
+      await this.uploadService.deleteImage(user.profileImageUrl);
+    }
+
+    const imageUrl = await this.uploadService.uploadImage(file, 'profiles');
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImageUrl: imageUrl },
+      select: USER_SELECT,
+    });
+  }
+
+  async deleteProfileImage(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    if (user.profileImageUrl) {
+      await this.uploadService.deleteImage(user.profileImageUrl);
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImageUrl: null },
+      select: USER_SELECT,
+    });
   }
 
   async getStatsWithEquipment(userId: string) {

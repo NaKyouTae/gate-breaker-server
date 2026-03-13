@@ -11,6 +11,7 @@ import { GameConfigModule } from './game-config/game-config.module';
 import { AdminModule } from './admin/admin.module';
 import { RedisModule } from './redis/redis.module';
 import { ChannelModule } from './channel/channel.module';
+import { CodexModule } from './codex/codex.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ChannelModule } from './channel/channel.module';
     ShopModule,
     AdminModule,
     ChannelModule,
+    CodexModule,
   ],
 })
 export class AppModule {}
