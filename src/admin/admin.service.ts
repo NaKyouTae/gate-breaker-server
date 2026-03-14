@@ -133,7 +133,27 @@ export class AdminService {
   }
 
   async deleteDungeon(id: string) {
-    return this.prisma.dungeon.delete({ where: { id } });
+    return this.prisma.$transaction(async (tx) => {
+      const dungeon = await tx.dungeon.findUnique({ where: { id } });
+      if (!dungeon) {
+        throw new NotFoundException('던전을 찾을 수 없습니다.');
+      }
+
+      // 던전 참조 정리
+      await tx.dropTable.deleteMany({
+        where: { monster: { dungeonId: id } },
+      });
+      await tx.monster.deleteMany({ where: { dungeonId: id } });
+      await tx.battleLog.deleteMany({ where: { dungeonId: id } });
+      await tx.channel.updateMany({
+        where: { dungeonId: id },
+        data: { dungeonId: null, status: 'WAITING' },
+      });
+
+      await tx.dungeon.delete({ where: { id } });
+
+      return { message: '던전을 삭제했습니다.' };
+    });
   }
 
   // ============ MONSTERS ============
@@ -165,7 +185,17 @@ export class AdminService {
   }
 
   async deleteMonster(id: string) {
-    return this.prisma.monster.delete({ where: { id } });
+    return this.prisma.$transaction(async (tx) => {
+      const monster = await tx.monster.findUnique({ where: { id } });
+      if (!monster) {
+        throw new NotFoundException('몬스터를 찾을 수 없습니다.');
+      }
+
+      await tx.dropTable.deleteMany({ where: { monsterId: id } });
+      await tx.monster.delete({ where: { id } });
+
+      return { message: '몬스터를 삭제했습니다.' };
+    });
   }
 
   // ============ ITEMS ============
@@ -251,6 +281,12 @@ export class AdminService {
   }
 
   async deleteDropTable(id: string) {
-    return this.prisma.dropTable.delete({ where: { id } });
+    const row = await this.prisma.dropTable.findUnique({ where: { id } });
+    if (!row) {
+      throw new NotFoundException('드롭 테이블을 찾을 수 없습니다.');
+    }
+
+    await this.prisma.dropTable.delete({ where: { id } });
+    return { message: '드롭 테이블을 삭제했습니다.' };
   }
 }

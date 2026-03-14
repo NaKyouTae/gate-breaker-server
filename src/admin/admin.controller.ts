@@ -115,7 +115,11 @@ export class AdminController {
   }
 
   @Delete('monsters/:id')
-  deleteMonster(@Param('id') id: string) {
+  async deleteMonster(@Param('id') id: string) {
+    const monster = await this.adminService.getMonsterById(id);
+    if (monster?.imageUrl) {
+      await this.uploadService.deleteImage(monster.imageUrl);
+    }
     return this.adminService.deleteMonster(id);
   }
 
