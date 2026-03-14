@@ -148,6 +148,8 @@ model Monster {
   defense    Int
   expReward  Int     @map("exp_reward")
   goldReward Int     @map("gold_reward")
+  isBoss     Boolean @default(false) @map("is_boss")
+  sortOrder  Int     @default(0) @map("sort_order")
   imageUrl   String? @map("image_url")
 
   dungeon    Dungeon     @relation(fields: [dungeonId], references: [id])

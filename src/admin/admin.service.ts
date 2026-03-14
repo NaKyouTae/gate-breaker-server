@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDungeonDto } from './dto/create-dungeon.dto';
 import { UpdateDungeonDto } from './dto/update-dungeon.dto';
@@ -196,7 +196,19 @@ export class AdminService {
   }
 
   async deleteItem(id: string) {
-    return this.prisma.item.delete({ where: { id } });
+    return this.prisma.$transaction(async (tx) => {
+      const item = await tx.item.findUnique({ where: { id } });
+      if (!item) {
+        throw new NotFoundException('아이템을 찾을 수 없습니다.');
+      }
+
+      // FK 참조 정리 후 아이템 삭제
+      await tx.dropTable.deleteMany({ where: { itemId: id } });
+      await tx.inventory.deleteMany({ where: { itemId: id } });
+      await tx.item.delete({ where: { id } });
+
+      return { message: '아이템을 삭제했습니다.' };
+    });
   }
 
   // ============ SHOP ============

@@ -160,7 +160,11 @@ export class AdminController {
   }
 
   @Delete('items/:id')
-  deleteItem(@Param('id') id: string) {
+  async deleteItem(@Param('id') id: string) {
+    const item = await this.adminService.getItemById(id);
+    if (item?.imageUrl) {
+      await this.uploadService.deleteImage(item.imageUrl);
+    }
     return this.adminService.deleteItem(id);
   }
 

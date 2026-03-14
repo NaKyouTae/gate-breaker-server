@@ -1,5 +1,9 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import {
+  purgeNonWeaponEquipment,
+  seedWeaponCatalog,
+} from '../bootstrap/weapon-catalog.seed';
 
 @Injectable()
 export class PrismaService
@@ -9,6 +13,7 @@ export class PrismaService
   async onModuleInit() {
     await this.$connect();
     await this.ensureSchemaCompatibility();
+    await this.seedBaselineWeapons();
   }
 
   async onModuleDestroy() {
@@ -28,6 +33,18 @@ export class PrismaService
     );
     await this.$executeRawUnsafe(
       'ALTER TABLE "monster" ADD COLUMN IF NOT EXISTS "image_url" TEXT;',
+    );
+  }
+
+  private async seedBaselineWeapons() {
+    const cleaned = await purgeNonWeaponEquipment(this);
+    console.log(
+      `[bootstrap] Non-weapon equipment purged (items: ${cleaned.itemsRemoved}, inventory: ${cleaned.inventoryRemoved}, drops: ${cleaned.dropTablesRemoved})`,
+    );
+
+    const { created, updated } = await seedWeaponCatalog(this);
+    console.log(
+      `[bootstrap] Weapon catalog seeded (created: ${created}, updated: ${updated})`,
     );
   }
 }

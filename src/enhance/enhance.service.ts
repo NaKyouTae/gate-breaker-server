@@ -26,7 +26,7 @@ export class EnhanceService {
   }
 
   getEnhanceCost():
-    | { baseGold: number; perLevel: number; stonePerLevel: number }
+    | { baseGold: number; perLevel: number }
     | undefined {
     return this.gameConfigService.getCachedValue('enhance', 'cost_multiplier');
   }

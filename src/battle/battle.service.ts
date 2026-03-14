@@ -576,6 +576,21 @@ export class BattleService {
     if (escaped) {
       session.log.push(this.logEntry('전투에서 도망쳤다!', 'system'));
 
+      // Save current HP/MP to database (subtract equipment bonuses)
+      const user = await this.prisma.user.findUnique({
+        where: { id: session.userId },
+      });
+      if (user) {
+        const bonusHp = session.playerMaxHp - user.maxHp;
+        const remainingBaseHp = session.playerHp - bonusHp;
+        const newHp = Math.min(Math.max(remainingBaseHp, 1), user.maxHp);
+
+        await this.prisma.user.update({
+          where: { id: session.userId },
+          data: { hp: newHp },
+        });
+      }
+
       await this.prisma.battleLog.create({
         data: {
           userId: session.userId,

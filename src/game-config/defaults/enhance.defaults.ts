@@ -19,5 +19,5 @@ export const enhanceDefaults = [
   { key: 'rate_17_to_18', value: { rate: 0.07, failPenalty: 'destroy' }, description: '+17 → +18 강화 확률' },
   { key: 'rate_18_to_19', value: { rate: 0.05, failPenalty: 'destroy' }, description: '+18 → +19 강화 확률' },
   { key: 'rate_19_to_20', value: { rate: 0.03, failPenalty: 'destroy' }, description: '+19 → +20 강화 확률' },
-  { key: 'cost_multiplier', value: { baseGold: 100, perLevel: 1.5, stonePerLevel: 1 }, description: '강화 비용 계수' },
+  { key: 'cost_multiplier', value: { baseGold: 100, perLevel: 1.5 }, description: '강화 비용 계수(골드 전용)' },
 ];
