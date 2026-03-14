@@ -217,17 +217,19 @@ async function main() {
   // ============ DUNGEONS & MONSTERS ============
 
   // Dungeon 1: 슬라임 숲
+  // 보상 범위: 골드 500~3000 / 일반 몬스터 → 보스 순서로 등장
   const slimeForest = await prisma.dungeon.create({
     data: {
       name: '슬라임 숲',
       minLevel: 1,
       maxLevel: 5,
-      rewardGoldMin: 10,
-      rewardGoldMax: 30,
-      rewardExp: 20,
+      rewardGoldMin: 500,
+      rewardGoldMax: 3000,
+      rewardExp: 200,
     },
   });
 
+  // 일반 몬스터 (약함)
   const slime = await prisma.monster.create({
     data: {
       name: '슬라임',
@@ -235,12 +237,12 @@ async function main() {
       hp: 30,
       attack: 5,
       defense: 2,
-      expReward: 15,
-      goldReward: 10,
-
+      expReward: 80,
+      goldReward: 500,
     },
   });
 
+  // 보스 (가장 강함 - 마지막 등장)
   const slimeKing = await prisma.monster.create({
     data: {
       name: '슬라임 킹',
@@ -248,9 +250,8 @@ async function main() {
       hp: 80,
       attack: 12,
       defense: 5,
-      expReward: 50,
-      goldReward: 40,
-
+      expReward: 300,
+      goldReward: 2000,
     },
   });
 
@@ -260,48 +261,48 @@ async function main() {
       name: '고블린 동굴',
       minLevel: 5,
       maxLevel: 10,
-      rewardGoldMin: 30,
-      rewardGoldMax: 60,
-      rewardExp: 50,
+      rewardGoldMin: 1500,
+      rewardGoldMax: 8000,
+      rewardExp: 600,
     },
   });
 
+  // 일반 몬스터 1
   const goblin = await prisma.monster.create({
     data: {
       name: '고블린',
       dungeonId: goblinCave.id,
-      hp: 50,
-      attack: 10,
+      hp: 60,
+      attack: 12,
       defense: 5,
-      expReward: 30,
-      goldReward: 20,
-
+      expReward: 200,
+      goldReward: 1200,
     },
   });
 
+  // 일반 몬스터 2
   const goblinShaman = await prisma.monster.create({
     data: {
       name: '고블린 샤먼',
       dungeonId: goblinCave.id,
-      hp: 40,
-      attack: 15,
+      hp: 50,
+      attack: 18,
       defense: 3,
-      expReward: 35,
-      goldReward: 25,
-
+      expReward: 250,
+      goldReward: 1500,
     },
   });
 
+  // 보스 (가장 강함 - 마지막 등장)
   const goblinChief = await prisma.monster.create({
     data: {
       name: '고블린 대장',
       dungeonId: goblinCave.id,
-      hp: 120,
-      attack: 20,
+      hp: 150,
+      attack: 25,
       defense: 10,
-      expReward: 100,
-      goldReward: 80,
-
+      expReward: 700,
+      goldReward: 5000,
     },
   });
 
@@ -311,35 +312,35 @@ async function main() {
       name: '오크 요새',
       minLevel: 10,
       maxLevel: 20,
-      rewardGoldMin: 60,
-      rewardGoldMax: 120,
-      rewardExp: 100,
+      rewardGoldMin: 4000,
+      rewardGoldMax: 18000,
+      rewardExp: 1500,
     },
   });
 
+  // 일반 몬스터 (약함)
   const orc = await prisma.monster.create({
     data: {
       name: '오크',
       dungeonId: orcFortress.id,
-      hp: 100,
-      attack: 20,
+      hp: 120,
+      attack: 22,
       defense: 12,
-      expReward: 60,
-      goldReward: 50,
-
+      expReward: 500,
+      goldReward: 3500,
     },
   });
 
+  // 보스 (가장 강함 - 마지막 등장)
   const orcChief = await prisma.monster.create({
     data: {
       name: '오크 대장',
       dungeonId: orcFortress.id,
-      hp: 200,
-      attack: 35,
+      hp: 280,
+      attack: 40,
       defense: 20,
-      expReward: 200,
-      goldReward: 150,
-
+      expReward: 2000,
+      goldReward: 12000,
     },
   });
 
@@ -349,35 +350,35 @@ async function main() {
       name: '언데드 묘지',
       minLevel: 20,
       maxLevel: 30,
-      rewardGoldMin: 120,
-      rewardGoldMax: 250,
-      rewardExp: 200,
+      rewardGoldMin: 10000,
+      rewardGoldMax: 45000,
+      rewardExp: 4000,
     },
   });
 
+  // 일반 몬스터 (약함)
   const skeleton = await prisma.monster.create({
     data: {
       name: '스켈레톤',
       dungeonId: undeadGraveyard.id,
-      hp: 80,
-      attack: 25,
+      hp: 100,
+      attack: 28,
       defense: 8,
-      expReward: 100,
-      goldReward: 80,
-
+      expReward: 1200,
+      goldReward: 8000,
     },
   });
 
+  // 보스 (가장 강함 - 마지막 등장)
   const lich = await prisma.monster.create({
     data: {
       name: '리치',
       dungeonId: undeadGraveyard.id,
-      hp: 300,
-      attack: 45,
-      defense: 25,
-      expReward: 400,
-      goldReward: 300,
-
+      hp: 450,
+      attack: 55,
+      defense: 28,
+      expReward: 5000,
+      goldReward: 30000,
     },
   });
 
@@ -387,35 +388,35 @@ async function main() {
       name: '드래곤 둥지',
       minLevel: 30,
       maxLevel: 50,
-      rewardGoldMin: 250,
-      rewardGoldMax: 500,
-      rewardExp: 500,
+      rewardGoldMin: 25000,
+      rewardGoldMax: 100000,
+      rewardExp: 10000,
     },
   });
 
+  // 일반 몬스터 (약함)
   const wyvern = await prisma.monster.create({
     data: {
       name: '와이번',
       dungeonId: dragonNest.id,
-      hp: 200,
-      attack: 40,
-      defense: 30,
-      expReward: 250,
-      goldReward: 200,
-
+      hp: 280,
+      attack: 48,
+      defense: 32,
+      expReward: 3000,
+      goldReward: 20000,
     },
   });
 
+  // 보스 (가장 강함 - 마지막 등장)
   const dragon = await prisma.monster.create({
     data: {
       name: '드래곤',
       dungeonId: dragonNest.id,
-      hp: 500,
-      attack: 60,
-      defense: 40,
-      expReward: 1000,
-      goldReward: 800,
-
+      hp: 800,
+      attack: 75,
+      defense: 50,
+      expReward: 15000,
+      goldReward: 80000,
     },
   });
 
