@@ -29,7 +29,7 @@ export class ChannelController {
 
   @Get('me')
   getMyChannel(@CurrentUser('userId') userId: string) {
-    return this.channelService.getUserChannel(userId);
+    return this.channelService.getUserChannels(userId);
   }
 
   @Get(':id')

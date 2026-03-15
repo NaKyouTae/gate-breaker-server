@@ -81,9 +81,6 @@ export class ChannelService {
 
   /** 채널 생성 */
   async createChannel(userId: string, dto: CreateChannelDto) {
-    // 이미 다른 채널에 참가 중인지 확인
-    await this.ensureNotInChannel(userId);
-
     const channel = await this.prisma.channel.create({
       data: {
         name: dto.name,
@@ -104,7 +101,13 @@ export class ChannelService {
 
   /** 채널 입장 */
   async joinChannel(channelId: string, userId: string) {
-    await this.ensureNotInChannel(userId);
+    // 이미 이 채널에 참가 중인지 확인
+    const alreadyMember = await this.prisma.channelMember.findUnique({
+      where: { channelId_userId: { channelId, userId } },
+    });
+    if (alreadyMember) {
+      throw new BadRequestException('이미 이 채널에 참가 중입니다.');
+    }
 
     const channel = await this.prisma.channel.findUnique({
       where: { id: channelId },
@@ -232,11 +235,21 @@ export class ChannelService {
     return raw.map((r) => JSON.parse(r) as ChatMessage);
   }
 
-  /** 유저가 현재 참가 중인 채널 확인 */
-  async getUserChannel(userId: string) {
-    return this.prisma.channelMember.findFirst({
+  /** 유저가 참가 중인 채널 목록 조회 */
+  async getUserChannels(userId: string) {
+    return this.prisma.channelMember.findMany({
       where: { userId },
-      include: { channel: true },
+      include: {
+        channel: {
+          include: {
+            members: {
+              include: { user: { select: { id: true, nickname: true, level: true, profileImageUrl: true } } },
+            },
+            dungeon: { select: { id: true, name: true, minLevel: true, maxLevel: true } },
+          },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
     });
   }
 
@@ -245,17 +258,6 @@ export class ChannelService {
     return this.prisma.channelMember.findUnique({
       where: { channelId_userId: { channelId, userId } },
     });
-  }
-
-  /** 이미 채널에 있는지 검사 */
-  private async ensureNotInChannel(userId: string) {
-    const existing = await this.prisma.channelMember.findFirst({
-      where: { userId },
-    });
-
-    if (existing) {
-      throw new BadRequestException('이미 다른 채널에 참가 중입니다.');
-    }
   }
 
   private async pushChannelMessage(
