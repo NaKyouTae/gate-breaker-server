@@ -108,13 +108,25 @@ export class GameConfigService {
     let created = 0;
     let skipped = 0;
 
+    let updated = 0;
+
     for (const { category, items } of allDefaults) {
       for (const item of items) {
         const existing = await this.prisma.gameConfig.findUnique({
           where: { category_key: { category, key: item.key } },
         });
         if (existing) {
-          skipped++;
+          const existingValue = JSON.stringify(existing.value);
+          const newValue = JSON.stringify(item.value);
+          if (existingValue !== newValue) {
+            await this.prisma.gameConfig.update({
+              where: { category_key: { category, key: item.key } },
+              data: { value: item.value, description: item.description },
+            });
+            updated++;
+          } else {
+            skipped++;
+          }
           continue;
         }
         await this.prisma.gameConfig.create({
@@ -130,7 +142,7 @@ export class GameConfigService {
     }
 
     await this.loadCache();
-    this.logger.log(`Seed complete: ${created} created, ${skipped} skipped`);
+    this.logger.log(`Seed complete: ${created} created, ${updated} updated, ${skipped} skipped`);
     return { created, skipped };
   }
 }
