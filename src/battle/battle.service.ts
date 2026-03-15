@@ -128,21 +128,9 @@ export class BattleService {
       newDefense += statGrowth?.defensePerLevel ?? 1;
     }
 
-    // Calculate HP/MP after battle
-    let newHp: number;
-    let newMp: number;
-
-    if (leveledUp) {
-      // Level up: restore HP/MP to full
-      newHp = newMaxHp;
-      newMp = newMaxMp;
-    } else {
-      // No level up: preserve remaining HP/MP
-      const bonusHp = session.playerMaxHp - user.maxHp;
-      const remainingBaseHp = session.playerHp - bonusHp;
-      newHp = Math.min(Math.max(remainingBaseHp, 1), newMaxHp);
-      newMp = Math.min(Math.max(user.mp, 1), newMaxMp);
-    }
+    // Restore HP/MP to full after battle
+    const newHp = newMaxHp;
+    const newMp = newMaxMp;
 
     await this.prisma.user.update({
       where: { id: session.userId },
@@ -548,7 +536,7 @@ export class BattleService {
     if (result === 'defeat') {
       session.log.push(this.logEntry('전투에서 패배했다...', 'system'));
       const defeatResult = await this.processDefeat(session);
-      return { status: 'DEFEAT', ...defeatResult, log: session.log };
+      return { status: 'DEFEAT', healAmount, ...defeatResult, log: session.log };
     }
 
     return {
@@ -559,6 +547,7 @@ export class BattleService {
       playerMaxMp: session.playerMaxMp,
       enemyHp: session.enemyHp,
       enemyMaxHp: session.enemyMaxHp,
+      healAmount,
       log: session.log,
     };
   }
@@ -572,18 +561,14 @@ export class BattleService {
     if (escaped) {
       session.log.push(this.logEntry('전투에서 도망쳤다!', 'system'));
 
-      // Save current HP/MP to database (subtract equipment bonuses)
+      // Restore HP/MP to full after battle
       const user = await this.prisma.user.findUnique({
         where: { id: session.userId },
       });
       if (user) {
-        const bonusHp = session.playerMaxHp - user.maxHp;
-        const remainingBaseHp = session.playerHp - bonusHp;
-        const newHp = Math.min(Math.max(remainingBaseHp, 1), user.maxHp);
-
         await this.prisma.user.update({
           where: { id: session.userId },
-          data: { hp: newHp },
+          data: { hp: user.maxHp, mp: user.maxMp },
         });
       }
 
