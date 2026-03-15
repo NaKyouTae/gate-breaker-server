@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import {
   purgeNonWeaponEquipment,
+  migrateOldWeapons,
   seedWeaponCatalog,
 } from '../bootstrap/weapon-catalog.seed';
 
@@ -41,6 +42,11 @@ export class PrismaService
     console.log(
       `[bootstrap] Non-weapon equipment purged (items: ${cleaned.itemsRemoved}, inventory: ${cleaned.inventoryRemoved}, drops: ${cleaned.dropTablesRemoved})`,
     );
+
+    const migration = await migrateOldWeapons(this);
+    if (migration.migrated > 0) {
+      console.log(`[bootstrap] Old weapons migrated: ${migration.migrated}`);
+    }
 
     const { created, updated } = await seedWeaponCatalog(this);
     console.log(

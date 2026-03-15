@@ -127,6 +127,52 @@ export async function purgeNonWeaponEquipment(
   };
 }
 
+/**
+ * 기존 무기(녹슨 검, 철검, 미스릴 검, 용의 검)를 새 무기로 변환한다.
+ * 인벤토리/드랍테이블 참조를 유지한 채 이름/스탯만 업데이트한다.
+ */
+const OLD_WEAPON_MIGRATION: { oldName: string; newName: string }[] = [
+  { oldName: '녹슨 검', newName: '균열 단검' },
+  { oldName: '철검', newName: '파수 장검' },
+  { oldName: '미스릴 검', newName: '용광 도끼' },
+  { oldName: '용의 검', newName: '월광 창' },
+];
+
+export async function migrateOldWeapons(prisma: PrismaClient): Promise<{ migrated: number }> {
+  let migrated = 0;
+
+  for (const { oldName, newName } of OLD_WEAPON_MIGRATION) {
+    const oldItem = await prisma.item.findFirst({ where: { name: oldName } });
+    if (!oldItem) continue;
+
+    // 새 이름의 아이템이 이미 존재하면 마이그레이션 스킵 (이미 완료됨)
+    const newItemExists = await prisma.item.findFirst({ where: { name: newName } });
+    if (newItemExists) continue;
+
+    const newWeaponData = WEAPON_CATALOG.find((w) => w.name === newName);
+    if (!newWeaponData) continue;
+
+    await prisma.item.update({
+      where: { id: oldItem.id },
+      data: {
+        name: newWeaponData.name,
+        category: '무기',
+        type: ItemType.WEAPON,
+        rarity: newWeaponData.rarity,
+        baseAttack: newWeaponData.baseAttack,
+        baseDefense: 0,
+        baseHp: 0,
+        description: newWeaponData.description,
+        sellPrice: newWeaponData.sellPrice,
+        buyPrice: newWeaponData.buyPrice,
+      },
+    });
+    migrated += 1;
+  }
+
+  return { migrated };
+}
+
 export async function seedWeaponCatalog(prisma: PrismaClient): Promise<{ created: number; updated: number }> {
   let created = 0;
   let updated = 0;

@@ -7,7 +7,7 @@ import {
   levelupDefaults,
   shopDefaults,
 } from '../game-config/defaults';
-import { purgeNonWeaponEquipment } from './weapon-catalog.seed';
+import { purgeNonWeaponEquipment, migrateOldWeapons, seedWeaponCatalog } from './weapon-catalog.seed';
 
 const prisma = new PrismaClient();
 
@@ -39,86 +39,22 @@ async function seedBaselineContent() {
 
   // ============ ITEMS ============
 
-  const rustySword = await findOrCreateItem({
-    name: '녹슨 검',
-    category: '무기',
-    type: ItemType.WEAPON,
-    rarity: Rarity.COMMON,
-    baseAttack: 5,
-    description: '녹이 슨 낡은 검. 그래도 맨손보단 낫다.',
-    sellPrice: 10,
-    buyPrice: 50,
-  });
+  // 기존 무기 마이그레이션 + 카탈로그 시드
+  const migration = await migrateOldWeapons(prisma);
+  console.log(`[bootstrap] Old weapons migrated: ${migration.migrated}`);
 
-  const ironSword = await findOrCreateItem({
-    name: '철검',
-    category: '무기',
-    type: ItemType.WEAPON,
-    rarity: Rarity.RARE,
-    baseAttack: 15,
-    description: '단단한 철로 만든 검.',
-    sellPrice: 100,
-    buyPrice: 500,
-  });
+  const weaponSeed = await seedWeaponCatalog(prisma);
+  console.log(`[bootstrap] Weapon catalog: created=${weaponSeed.created}, updated=${weaponSeed.updated}`);
 
-  const mithrilSword = await findOrCreateItem({
-    name: '미스릴 검',
-    category: '무기',
-    type: ItemType.WEAPON,
-    rarity: Rarity.EPIC,
-    baseAttack: 30,
-    description: '미스릴로 단조된 명검.',
-    sellPrice: 500,
-    buyPrice: 2000,
-  });
-
-  const dragonSword = await findOrCreateItem({
-    name: '용의 검',
-    category: '무기',
-    type: ItemType.WEAPON,
-    rarity: Rarity.LEGENDARY,
-    baseAttack: 60,
-    baseDefense: 5,
-    description: '드래곤의 이빨로 만든 전설의 검.',
-    sellPrice: 2000,
-    buyPrice: null,
-  });
-
-  const leatherArmor = await findOrCreateItem({
-    name: '가죽 갑옷',
-    category: '방어구',
-    type: ItemType.ARMOR,
-    rarity: Rarity.COMMON,
-    baseDefense: 5,
-    baseHp: 10,
-    description: '가죽으로 만든 기본 갑옷.',
-    sellPrice: 10,
-    buyPrice: 50,
-  });
-
-  const ironArmor = await findOrCreateItem({
-    name: '철갑옷',
-    category: '방어구',
-    type: ItemType.ARMOR,
-    rarity: Rarity.RARE,
-    baseDefense: 15,
-    baseHp: 30,
-    description: '단단한 철로 만든 갑옷.',
-    sellPrice: 100,
-    buyPrice: 500,
-  });
-
-  const mithrilArmor = await findOrCreateItem({
-    name: '미스릴 갑옷',
-    category: '방어구',
-    type: ItemType.ARMOR,
-    rarity: Rarity.EPIC,
-    baseDefense: 30,
-    baseHp: 60,
-    description: '미스릴로 단조된 갑옷.',
-    sellPrice: 500,
-    buyPrice: 2000,
-  });
+  // 드랍테이블용 무기 참조
+  const crackDagger = await prisma.item.findFirstOrThrow({ where: { name: '균열 단검' } });
+  const guardSword = await prisma.item.findFirstOrThrow({ where: { name: '파수 장검' } });
+  const blazeAxe = await prisma.item.findFirstOrThrow({ where: { name: '용광 도끼' } });
+  const moonSpear = await prisma.item.findFirstOrThrow({ where: { name: '월광 창' } });
+  const stormBow = await prisma.item.findFirstOrThrow({ where: { name: '폭풍 활' } });
+  const abyssStaff = await prisma.item.findFirstOrThrow({ where: { name: '심연 지팡이' } });
+  const thunderGauntlet = await prisma.item.findFirstOrThrow({ where: { name: '낙뢰 권갑' } });
+  const holyGreatsword = await prisma.item.findFirstOrThrow({ where: { name: '성흔 대검' } });
 
   const hpPotion = await findOrCreateItem({
     name: 'HP 포션',
@@ -406,38 +342,37 @@ async function seedBaselineContent() {
   // ============ DROP TABLES ============
 
   const dropTableEntries = [
-    // 균열의 숲
+    // 균열의 숲 - 기본 무기
     { monsterId: mossSlime.id, itemId: slimeGel.id, dropRate: 0.5 },
     { monsterId: mossSlime.id, itemId: hpPotion.id, dropRate: 0.2 },
     { monsterId: crackGoblin.id, itemId: goblinTooth.id, dropRate: 0.5 },
     { monsterId: crackGoblin.id, itemId: hpPotion.id, dropRate: 0.3 },
-    { monsterId: forestGuardian.id, itemId: rustySword.id, dropRate: 0.3 },
-    { monsterId: forestGuardian.id, itemId: leatherArmor.id, dropRate: 0.2 },
+    { monsterId: forestGuardian.id, itemId: crackDagger.id, dropRate: 0.3 },
+    { monsterId: forestGuardian.id, itemId: guardSword.id, dropRate: 0.2 },
     // 폐허의 광산
-    { monsterId: mineOrc.id, itemId: ironSword.id, dropRate: 0.1 },
-    { monsterId: rockSpider.id, itemId: ironArmor.id, dropRate: 0.1 },
-    { monsterId: mineSupervisor.id, itemId: ironSword.id, dropRate: 0.2 },
-    { monsterId: mineSupervisor.id, itemId: ironArmor.id, dropRate: 0.15 },
+    { monsterId: mineOrc.id, itemId: blazeAxe.id, dropRate: 0.1 },
+    { monsterId: rockSpider.id, itemId: moonSpear.id, dropRate: 0.1 },
+    { monsterId: mineSupervisor.id, itemId: blazeAxe.id, dropRate: 0.2 },
+    { monsterId: mineSupervisor.id, itemId: stormBow.id, dropRate: 0.15 },
     { monsterId: mineSupervisor.id, itemId: superHpPotion.id, dropRate: 0.3 },
     // 심연의 성채
-    { monsterId: shadowKnight.id, itemId: ironSword.id, dropRate: 0.1 },
-    { monsterId: shadowKnight.id, itemId: ironArmor.id, dropRate: 0.1 },
-    { monsterId: fortressExecutor.id, itemId: mithrilSword.id, dropRate: 0.05 },
-    { monsterId: abyssCommander.id, itemId: mithrilSword.id, dropRate: 0.15 },
-    { monsterId: abyssCommander.id, itemId: mithrilArmor.id, dropRate: 0.1 },
+    { monsterId: shadowKnight.id, itemId: moonSpear.id, dropRate: 0.1 },
+    { monsterId: shadowKnight.id, itemId: stormBow.id, dropRate: 0.1 },
+    { monsterId: fortressExecutor.id, itemId: abyssStaff.id, dropRate: 0.05 },
+    { monsterId: abyssCommander.id, itemId: abyssStaff.id, dropRate: 0.15 },
+    { monsterId: abyssCommander.id, itemId: thunderGauntlet.id, dropRate: 0.1 },
     { monsterId: abyssCommander.id, itemId: superHpPotion.id, dropRate: 0.4 },
     // 망자의 대성당
-    { monsterId: cursedPriest.id, itemId: mithrilSword.id, dropRate: 0.05 },
+    { monsterId: cursedPriest.id, itemId: thunderGauntlet.id, dropRate: 0.05 },
     { monsterId: cursedPriest.id, itemId: superHpPotion.id, dropRate: 0.3 },
-    { monsterId: tombGuardian.id, itemId: mithrilArmor.id, dropRate: 0.1 },
-    { monsterId: deathBishop.id, itemId: mithrilSword.id, dropRate: 0.2 },
-    { monsterId: deathBishop.id, itemId: mithrilArmor.id, dropRate: 0.15 },
+    { monsterId: tombGuardian.id, itemId: abyssStaff.id, dropRate: 0.1 },
+    { monsterId: deathBishop.id, itemId: thunderGauntlet.id, dropRate: 0.2 },
+    { monsterId: deathBishop.id, itemId: holyGreatsword.id, dropRate: 0.1 },
     // 용왕의 균열핵
-    { monsterId: crackWyvern.id, itemId: mithrilSword.id, dropRate: 0.15 },
-    { monsterId: crackWyvern.id, itemId: mithrilArmor.id, dropRate: 0.1 },
-    { monsterId: lavaDragon.id, itemId: dragonSword.id, dropRate: 0.05 },
-    { monsterId: lavaDragon.id, itemId: mithrilArmor.id, dropRate: 0.2 },
-    { monsterId: dragonKing.id, itemId: dragonSword.id, dropRate: 0.1 },
+    { monsterId: crackWyvern.id, itemId: thunderGauntlet.id, dropRate: 0.15 },
+    { monsterId: crackWyvern.id, itemId: holyGreatsword.id, dropRate: 0.08 },
+    { monsterId: lavaDragon.id, itemId: holyGreatsword.id, dropRate: 0.1 },
+    { monsterId: dragonKing.id, itemId: holyGreatsword.id, dropRate: 0.15 },
   ];
 
   for (const entry of dropTableEntries) {
