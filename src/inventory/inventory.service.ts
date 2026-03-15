@@ -77,7 +77,7 @@ export class InventoryService {
     }
 
     const totalExpectedCost = cumulativeCosts[Math.min(enhanceLevel, cumulativeCosts.length - 1)];
-    return Math.floor(totalExpectedCost * 0.2);
+    return Math.floor(totalExpectedCost * 0.5);
   }
 
   async findAll(userId: string) {

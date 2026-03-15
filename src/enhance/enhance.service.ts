@@ -4,10 +4,19 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { Item } from '@prisma/client';
+import { Item, ItemType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { GameConfigService } from '../game-config/game-config.service';
 import { EnhanceDto } from './dto/enhance.dto';
+
+/** 강화석 이름 → 보너스 성공률 (%) 매핑 */
+const ENHANCE_STONE_BONUS: Record<string, number> = {
+  '균열의 강화석': 1,
+  '빛나는 강화석': 2,
+  '고대의 강화석': 3,
+  '심연의 강화석': 4,
+  '용의 강화석': 5,
+};
 
 interface LegacyRate {
   rate: number;
@@ -166,6 +175,41 @@ export class EnhanceService {
       );
     }
 
+    // 강화석 처리
+    let stoneBonusRate = 0;
+    if (enhanceDto.enhanceStoneId) {
+      const stoneInv = await this.prisma.inventory.findUnique({
+        where: { id: enhanceDto.enhanceStoneId },
+        include: { item: true },
+      });
+
+      if (!stoneInv) {
+        throw new NotFoundException('강화석을 찾을 수 없습니다.');
+      }
+      if (stoneInv.userId !== userId) {
+        throw new ForbiddenException('본인의 강화석만 사용할 수 있습니다.');
+      }
+      if (stoneInv.item.type !== ItemType.MATERIAL) {
+        throw new BadRequestException('강화석이 아닌 아이템입니다.');
+      }
+
+      const bonus = ENHANCE_STONE_BONUS[stoneInv.item.name];
+      if (bonus == null) {
+        throw new BadRequestException('강화석이 아닌 아이템입니다.');
+      }
+      stoneBonusRate = bonus;
+
+      // 강화석 소모 (수량 1 차감, 0이면 삭제)
+      if (stoneInv.quantity <= 1) {
+        await this.prisma.inventory.delete({ where: { id: stoneInv.id } });
+      } else {
+        await this.prisma.inventory.update({
+          where: { id: stoneInv.id },
+          data: { quantity: { decrement: 1 } },
+        });
+      }
+    }
+
     // Deduct gold
     await this.prisma.user.update({
       where: { id: userId },
@@ -174,11 +218,45 @@ export class EnhanceService {
 
     const roll = Math.random();
 
-    if (isMultiRate(rateInfo)) {
-      return this.resolveMultiRate(roll, rateInfo, enhanceDto.inventoryId, currentLevel, inventory.item, goldCost);
+    // 강화석 보너스를 적용한 확률 정보 생성
+    const adjustedRateInfo = this.applyStoneBonus(rateInfo, stoneBonusRate);
+
+    if (isMultiRate(adjustedRateInfo)) {
+      return this.resolveMultiRate(roll, adjustedRateInfo, enhanceDto.inventoryId, currentLevel, inventory.item, goldCost);
     }
 
-    return this.resolveLegacyRate(roll, rateInfo, enhanceDto.inventoryId, currentLevel, inventory.item, goldCost);
+    return this.resolveLegacyRate(roll, adjustedRateInfo, enhanceDto.inventoryId, currentLevel, inventory.item, goldCost);
+  }
+
+  private applyStoneBonus(rateInfo: EnhanceRate, bonusPercent: number): EnhanceRate {
+    if (bonusPercent <= 0) return rateInfo;
+
+    const bonus = bonusPercent / 100; // e.g. 3% → 0.03
+
+    if (isMultiRate(rateInfo)) {
+      const newSuccess = Math.min(1, rateInfo.successRate + bonus);
+      const added = newSuccess - rateInfo.successRate;
+      // 보너스만큼 성공률 증가, 나머지 확률에서 비례 차감 (유지 > 하락 > 파괴 순)
+      let remainToDeduct = added;
+      let newMaintain = rateInfo.maintainRate;
+      let newDowngrade = rateInfo.downgradeRate;
+      let newDestroy = rateInfo.destroyRate;
+
+      const deductFrom = (val: number) => {
+        const d = Math.min(val, remainToDeduct);
+        remainToDeduct -= d;
+        return val - d;
+      };
+      newMaintain = deductFrom(newMaintain);
+      newDowngrade = deductFrom(newDowngrade);
+      newDestroy = deductFrom(newDestroy);
+
+      return { successRate: newSuccess, maintainRate: newMaintain, downgradeRate: newDowngrade, destroyRate: newDestroy };
+    }
+
+    // Legacy rate
+    const newRate = Math.min(1, rateInfo.rate + bonus);
+    return { rate: newRate, failPenalty: rateInfo.failPenalty };
   }
 
   private async resolveMultiRate(
