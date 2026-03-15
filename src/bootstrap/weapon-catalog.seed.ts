@@ -157,46 +157,49 @@ export async function migrateOldWeapons(prisma: PrismaClient): Promise<{ migrate
 
     if (newItem) {
       // 새 무기가 이미 존재 → 인벤토리/드랍테이블 참조를 새 아이템으로 이전
-      await prisma.$transaction(async (tx) => {
-        // 인벤토리: 구 아이템을 가진 유저의 인벤토리를 새 아이템으로 교체
-        const oldInventories = await tx.inventory.findMany({
-          where: { itemId: oldItem.id },
-        });
-
-        for (const inv of oldInventories) {
-          // 같은 유저가 이미 새 무기를 보유 중인지 확인
-          const existingNew = await tx.inventory.findFirst({
-            where: { userId: inv.userId, itemId: newItem.id },
+      await prisma.$transaction(
+        async (tx) => {
+          // 인벤토리: 구 아이템을 가진 유저의 인벤토리를 새 아이템으로 교체
+          const oldInventories = await tx.inventory.findMany({
+            where: { itemId: oldItem.id },
           });
 
-          if (existingNew) {
-            // 이미 새 무기 보유 → 구 인벤토리 항목 삭제 (강화 레벨이 더 높은 쪽 유지)
-            if (inv.enhanceLevel > existingNew.enhanceLevel) {
+          for (const inv of oldInventories) {
+            // 같은 유저가 이미 새 무기를 보유 중인지 확인
+            const existingNew = await tx.inventory.findFirst({
+              where: { userId: inv.userId, itemId: newItem.id },
+            });
+
+            if (existingNew) {
+              // 이미 새 무기 보유 → 구 인벤토리 항목 삭제 (강화 레벨이 더 높은 쪽 유지)
+              if (inv.enhanceLevel > existingNew.enhanceLevel) {
+                await tx.inventory.update({
+                  where: { id: existingNew.id },
+                  data: {
+                    enhanceLevel: inv.enhanceLevel,
+                    isEquipped: inv.isEquipped || existingNew.isEquipped,
+                    equippedSlot: inv.isEquipped ? inv.equippedSlot : existingNew.equippedSlot,
+                  },
+                });
+              }
+              await tx.inventory.delete({ where: { id: inv.id } });
+            } else {
+              // 새 무기 미보유 → itemId만 교체
               await tx.inventory.update({
-                where: { id: existingNew.id },
-                data: {
-                  enhanceLevel: inv.enhanceLevel,
-                  isEquipped: inv.isEquipped || existingNew.isEquipped,
-                  equippedSlot: inv.isEquipped ? inv.equippedSlot : existingNew.equippedSlot,
-                },
+                where: { id: inv.id },
+                data: { itemId: newItem.id },
               });
             }
-            await tx.inventory.delete({ where: { id: inv.id } });
-          } else {
-            // 새 무기 미보유 → itemId만 교체
-            await tx.inventory.update({
-              where: { id: inv.id },
-              data: { itemId: newItem.id },
-            });
           }
-        }
 
-        // 드랍테이블 참조 이전
-        await tx.dropTable.deleteMany({ where: { itemId: oldItem.id } });
+          // 드랍테이블 참조 이전
+          await tx.dropTable.deleteMany({ where: { itemId: oldItem.id } });
 
-        // 구 아이템 삭제
-        await tx.item.delete({ where: { id: oldItem.id } });
-      });
+          // 구 아이템 삭제
+          await tx.item.delete({ where: { id: oldItem.id } });
+        },
+        { maxWait: 10000, timeout: 30000 },
+      );
     } else {
       // 새 무기가 없으면 구 아이템을 직접 rename
       await prisma.item.update({

@@ -160,12 +160,18 @@ export class DungeonService {
     const bossMonster = sortedMonsters.find((m) => m.isBoss) || sortedMonsters[sortedMonsters.length - 1];
 
     // Boss flag → always return the boss
-    // Otherwise cycle through non-boss monsters by index
+    // Otherwise group non-boss encounters by monster type (HP ascending)
+    // e.g. 5 encounters with 2 types → [0,0,0,1,1] instead of [0,1,0,1,0]
     let monster;
     if (isBoss) {
       monster = bossMonster;
     } else if (nonBossMonsters.length > 0 && monsterIndex != null && monsterIndex >= 0) {
-      monster = nonBossMonsters[monsterIndex % nonBossMonsters.length];
+      const groupSize = Math.ceil(5 / nonBossMonsters.length);
+      const typeIndex = Math.min(
+        Math.floor(monsterIndex / groupSize),
+        nonBossMonsters.length - 1,
+      );
+      monster = nonBossMonsters[typeIndex];
     } else {
       monster = nonBossMonsters[0] || sortedMonsters[0];
     }
