@@ -27,6 +27,7 @@ import { UpdateItemDto } from './dto/update-item.dto';
 import { CreateDropTableDto } from './dto/create-drop-table.dto';
 import { UpdateDropTableDto } from './dto/update-drop-table.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -57,6 +58,11 @@ export class AdminController {
   @Get('users/:id')
   getUserDetail(@Param('id') id: string) {
     return this.adminService.getUserDetail(id);
+  }
+
+  @Patch('users/:id')
+  updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+    return this.adminService.updateUser(id, dto);
   }
 
   @Patch('users/:id/ban')

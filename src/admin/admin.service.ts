@@ -9,6 +9,7 @@ import { UpdateItemDto } from './dto/update-item.dto';
 import { CreateDropTableDto } from './dto/create-drop-table.dto';
 import { UpdateDropTableDto } from './dto/update-drop-table.dto';
 import { UpdateShopDto } from './dto/update-shop.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class AdminService {
@@ -85,6 +86,13 @@ export class AdminService {
       where: { id },
     });
     return { message: 'Ban toggled', userId: user.id };
+  }
+
+  async updateUser(id: string, dto: UpdateUserDto) {
+    return this.prisma.user.update({
+      where: { id },
+      data: dto,
+    });
   }
 
   // ============ BATTLE LOGS ============
