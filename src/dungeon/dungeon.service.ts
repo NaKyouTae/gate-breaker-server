@@ -82,6 +82,7 @@ export class DungeonService {
   async findAll() {
     return this.prisma.dungeon.findMany({
       orderBy: { minLevel: 'asc' },
+      include: { monsters: true },
     });
   }
 
@@ -106,7 +107,7 @@ export class DungeonService {
     return dungeon;
   }
 
-  async enter(userId: string, dungeonId: string) {
+  async enter(userId: string, dungeonId: string, monsterIndex?: number) {
     // If user already has an active battle
     const existingBattle = getBattleSessionFromStore(userId);
     if (existingBattle) {
@@ -149,19 +150,18 @@ export class DungeonService {
       throw new NotFoundException('사용자를 찾을 수 없습니다.');
     }
 
-    if (user.level < dungeon.minLevel) {
-      throw new BadRequestException(
-        `레벨이 부족합니다. 최소 레벨: ${dungeon.minLevel}`,
-      );
-    }
-
     if (dungeon.monsters.length === 0) {
       throw new BadRequestException('이 던전에는 몬스터가 없습니다.');
     }
 
-    // Pick a random monster
-    const randomIndex = Math.floor(Math.random() * dungeon.monsters.length);
-    const monster = dungeon.monsters[randomIndex];
+    // Sort monsters by HP ascending (lower HP first)
+    const sortedMonsters = [...dungeon.monsters].sort((a, b) => a.hp - b.hp);
+
+    // Pick monster by index (sorted by HP) or random fallback
+    const monster =
+      monsterIndex != null && monsterIndex >= 0 && monsterIndex < sortedMonsters.length
+        ? sortedMonsters[monsterIndex]
+        : sortedMonsters[Math.floor(Math.random() * sortedMonsters.length)];
 
     // Get equipment bonuses
     const equippedItems = await this.prisma.inventory.findMany({

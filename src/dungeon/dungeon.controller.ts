@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
 import { DungeonService } from './dungeon.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -22,7 +22,9 @@ export class DungeonController {
   async enter(
     @CurrentUser('userId') userId: string,
     @Param('id') dungeonId: string,
+    @Query('monsterIndex') monsterIndex?: string,
   ) {
-    return this.dungeonService.enter(userId, dungeonId);
+    const idx = monsterIndex != null ? parseInt(monsterIndex, 10) : undefined;
+    return this.dungeonService.enter(userId, dungeonId, idx);
   }
 }

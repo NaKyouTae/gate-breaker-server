@@ -14,7 +14,7 @@ export class ShopService {
   async getShopItems() {
     return this.prisma.item.findMany({
       where: {
-        buyPrice: { not: null, gt: 0 },
+        buyPrice: { not: null, gte: 0 },
       },
       orderBy: [{ category: 'asc' }, { type: 'asc' }, { buyPrice: 'asc' }],
     });
@@ -28,7 +28,7 @@ export class ShopService {
       where: { id: itemId },
     });
 
-    if (!item || !item.buyPrice || item.buyPrice <= 0) {
+    if (!item || item.buyPrice === null || item.buyPrice === undefined) {
       throw new NotFoundException('구매할 수 없는 아이템입니다.');
     }
 
