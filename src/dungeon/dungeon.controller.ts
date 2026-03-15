@@ -23,8 +23,9 @@ export class DungeonController {
     @CurrentUser('userId') userId: string,
     @Param('id') dungeonId: string,
     @Query('monsterIndex') monsterIndex?: string,
+    @Query('isBoss') isBoss?: string,
   ) {
     const idx = monsterIndex != null ? parseInt(monsterIndex, 10) : undefined;
-    return this.dungeonService.enter(userId, dungeonId, idx);
+    return this.dungeonService.enter(userId, dungeonId, idx, isBoss === 'true');
   }
 }

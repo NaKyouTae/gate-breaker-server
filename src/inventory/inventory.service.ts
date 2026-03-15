@@ -46,6 +46,10 @@ export class InventoryService {
       throw new ForbiddenException('본인의 아이템만 장착할 수 있습니다.');
     }
 
+    if (inventory.isDestroyed) {
+      throw new BadRequestException('파괴된 아이템은 장착할 수 없습니다.');
+    }
+
     const slot = ITEM_TYPE_TO_EQUIP_SLOT[inventory.item.type];
     if (!slot) {
       throw new BadRequestException('장착할 수 없는 아이템입니다.');
@@ -111,6 +115,10 @@ export class InventoryService {
       throw new BadRequestException('장착 중인 아이템은 판매할 수 없습니다.');
     }
 
+    if (inventory.isDestroyed) {
+      throw new BadRequestException('파괴된 아이템은 판매할 수 없습니다.');
+    }
+
     const quantity = sellDto.quantity ?? inventory.quantity;
 
     if (quantity > inventory.quantity) {
@@ -160,5 +168,61 @@ export class InventoryService {
     });
 
     return { message: '아이템이 삭제되었습니다.' };
+  }
+
+  async restore(userId: string, inventoryId: string) {
+    const inventory = await this.prisma.inventory.findUnique({
+      where: { id: inventoryId },
+      include: { item: true },
+    });
+
+    if (!inventory) {
+      throw new NotFoundException('인벤토리 아이템을 찾을 수 없습니다.');
+    }
+
+    if (inventory.userId !== userId) {
+      throw new ForbiddenException('본인의 아이템만 복원할 수 있습니다.');
+    }
+
+    if (!inventory.isDestroyed) {
+      throw new BadRequestException('파괴된 아이템만 복원할 수 있습니다.');
+    }
+
+    // 복원 비용: 5000 골드
+    const restoreCost = 5000;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    if (user.gold < restoreCost) {
+      throw new BadRequestException(
+        `골드가 부족합니다. 필요: ${restoreCost}, 보유: ${user.gold}`,
+      );
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { gold: { decrement: restoreCost } },
+    });
+
+    const updated = await this.prisma.inventory.update({
+      where: { id: inventoryId },
+      data: {
+        isDestroyed: false,
+        enhanceLevel: 10,
+      },
+      include: { item: true },
+    });
+
+    return {
+      message: `${updated.item.name}이(가) +10 상태로 복원되었습니다.`,
+      inventory: updated,
+      goldCost: restoreCost,
+    };
   }
 }

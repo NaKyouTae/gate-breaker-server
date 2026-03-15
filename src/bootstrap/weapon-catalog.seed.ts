@@ -128,13 +128,18 @@ export async function purgeNonWeaponEquipment(
 }
 
 /**
- * 기존 무기(녹슨 검, 철검, 미스릴 검, 용의 검)를 새 무기로 변환한다.
- * 인벤토리/드랍테이블 참조를 유지한 채 이름/스탯만 업데이트한다.
+ * 기존 무기(녹슨 검, 녹슨검, 철검, 강철검, 미스릴 검, 미스릴검, 용의 검)를
+ * 새 무기로 변환한다.
+ * - 새 무기 아이템이 아직 없으면: 구 아이템을 직접 rename
+ * - 새 무기 아이템이 이미 있으면: 인벤토리/드랍테이블 참조를 새 아이템으로 이전 후 구 아이템 삭제
  */
 const OLD_WEAPON_MIGRATION: { oldName: string; newName: string }[] = [
   { oldName: '녹슨 검', newName: '균열 단검' },
+  { oldName: '녹슨검', newName: '균열 단검' },
   { oldName: '철검', newName: '파수 장검' },
+  { oldName: '강철검', newName: '파수 장검' },
   { oldName: '미스릴 검', newName: '용광 도끼' },
+  { oldName: '미스릴검', newName: '용광 도끼' },
   { oldName: '용의 검', newName: '월광 창' },
 ];
 
@@ -145,28 +150,72 @@ export async function migrateOldWeapons(prisma: PrismaClient): Promise<{ migrate
     const oldItem = await prisma.item.findFirst({ where: { name: oldName } });
     if (!oldItem) continue;
 
-    // 새 이름의 아이템이 이미 존재하면 마이그레이션 스킵 (이미 완료됨)
-    const newItemExists = await prisma.item.findFirst({ where: { name: newName } });
-    if (newItemExists) continue;
-
     const newWeaponData = WEAPON_CATALOG.find((w) => w.name === newName);
     if (!newWeaponData) continue;
 
-    await prisma.item.update({
-      where: { id: oldItem.id },
-      data: {
-        name: newWeaponData.name,
-        category: '무기',
-        type: ItemType.WEAPON,
-        rarity: newWeaponData.rarity,
-        baseAttack: newWeaponData.baseAttack,
-        baseDefense: 0,
-        baseHp: 0,
-        description: newWeaponData.description,
-        sellPrice: newWeaponData.sellPrice,
-        buyPrice: newWeaponData.buyPrice,
-      },
-    });
+    const newItem = await prisma.item.findFirst({ where: { name: newName } });
+
+    if (newItem) {
+      // 새 무기가 이미 존재 → 인벤토리/드랍테이블 참조를 새 아이템으로 이전
+      await prisma.$transaction(async (tx) => {
+        // 인벤토리: 구 아이템을 가진 유저의 인벤토리를 새 아이템으로 교체
+        const oldInventories = await tx.inventory.findMany({
+          where: { itemId: oldItem.id },
+        });
+
+        for (const inv of oldInventories) {
+          // 같은 유저가 이미 새 무기를 보유 중인지 확인
+          const existingNew = await tx.inventory.findFirst({
+            where: { userId: inv.userId, itemId: newItem.id },
+          });
+
+          if (existingNew) {
+            // 이미 새 무기 보유 → 구 인벤토리 항목 삭제 (강화 레벨이 더 높은 쪽 유지)
+            if (inv.enhanceLevel > existingNew.enhanceLevel) {
+              await tx.inventory.update({
+                where: { id: existingNew.id },
+                data: {
+                  enhanceLevel: inv.enhanceLevel,
+                  isEquipped: inv.isEquipped || existingNew.isEquipped,
+                  equippedSlot: inv.isEquipped ? inv.equippedSlot : existingNew.equippedSlot,
+                },
+              });
+            }
+            await tx.inventory.delete({ where: { id: inv.id } });
+          } else {
+            // 새 무기 미보유 → itemId만 교체
+            await tx.inventory.update({
+              where: { id: inv.id },
+              data: { itemId: newItem.id },
+            });
+          }
+        }
+
+        // 드랍테이블 참조 이전
+        await tx.dropTable.deleteMany({ where: { itemId: oldItem.id } });
+
+        // 구 아이템 삭제
+        await tx.item.delete({ where: { id: oldItem.id } });
+      });
+    } else {
+      // 새 무기가 없으면 구 아이템을 직접 rename
+      await prisma.item.update({
+        where: { id: oldItem.id },
+        data: {
+          name: newWeaponData.name,
+          category: '무기',
+          type: ItemType.WEAPON,
+          rarity: newWeaponData.rarity,
+          baseAttack: newWeaponData.baseAttack,
+          baseDefense: 0,
+          baseHp: 0,
+          description: newWeaponData.description,
+          sellPrice: newWeaponData.sellPrice,
+          buyPrice: newWeaponData.buyPrice,
+        },
+      });
+    }
+
     migrated += 1;
   }
 

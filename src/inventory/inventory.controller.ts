@@ -47,6 +47,14 @@ export class InventoryController {
     return this.inventoryService.sell(userId, sellDto);
   }
 
+  @Post('restore')
+  async restore(
+    @CurrentUser('userId') userId: string,
+    @Body() equipDto: EquipDto,
+  ) {
+    return this.inventoryService.restore(userId, equipDto.inventoryId);
+  }
+
   @Delete(':id')
   async discard(
     @CurrentUser('userId') userId: string,

@@ -86,6 +86,10 @@ export class EnhanceService {
       throw new ForbiddenException('본인의 아이템만 강화할 수 있습니다.');
     }
 
+    if (inventory.isDestroyed) {
+      throw new BadRequestException('파괴된 아이템은 강화할 수 없습니다.');
+    }
+
     const currentLevel = inventory.enhanceLevel;
     const rateInfo = this.getEnhanceRate(currentLevel);
 
@@ -184,8 +188,14 @@ export class EnhanceService {
     }
 
     if (penalty === 'destroy') {
-      await this.prisma.inventory.delete({
+      await this.prisma.inventory.update({
         where: { id: enhanceDto.inventoryId },
+        data: {
+          isDestroyed: true,
+          isEquipped: false,
+          equippedSlot: null,
+          enhanceLevel: 0,
+        },
       });
       return {
         success: false,

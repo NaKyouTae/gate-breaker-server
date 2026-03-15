@@ -110,14 +110,12 @@ export class BattleService {
     let newLevel = user.level;
     let newMaxHp = user.maxHp;
     let newMaxMp = user.maxMp;
-    let newAttack = user.attack;
     let newDefense = user.defense;
     let leveledUp = false;
 
     const statGrowth = this.gameConfigService.getCachedValue<{
       hpPerLevel: number;
       mpPerLevel: number;
-      attackPerLevel: number;
       defensePerLevel: number;
     }>('levelup', 'stat_growth');
 
@@ -127,7 +125,6 @@ export class BattleService {
       leveledUp = true;
       newMaxHp += statGrowth?.hpPerLevel ?? 10;
       newMaxMp += statGrowth?.mpPerLevel ?? 5;
-      newAttack += statGrowth?.attackPerLevel ?? 2;
       newDefense += statGrowth?.defensePerLevel ?? 1;
     }
 
@@ -157,7 +154,6 @@ export class BattleService {
         hp: newHp,
         maxMp: newMaxMp,
         mp: newMp,
-        attack: newAttack,
         defense: newDefense,
       },
     });
@@ -498,8 +494,8 @@ export class BattleService {
       throw new BadRequestException('사용할 수 있는 소비 아이템이 없습니다.');
     }
 
-    // Heal 30 HP
-    const healAmount = 30;
+    // Use item's healHp (fallback to 30 for legacy items)
+    const healAmount = consumable.item.healHp || 30;
     session.playerHp = Math.min(
       session.playerMaxHp,
       session.playerHp + healAmount,

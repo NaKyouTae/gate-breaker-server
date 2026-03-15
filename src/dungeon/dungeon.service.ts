@@ -107,7 +107,7 @@ export class DungeonService {
     return dungeon;
   }
 
-  async enter(userId: string, dungeonId: string, monsterIndex?: number) {
+  async enter(userId: string, dungeonId: string, monsterIndex?: number, isBoss?: boolean) {
     // If user already has an active battle
     const existingBattle = getBattleSessionFromStore(userId);
     if (existingBattle) {
@@ -154,14 +154,21 @@ export class DungeonService {
       throw new BadRequestException('이 던전에는 몬스터가 없습니다.');
     }
 
-    // Sort monsters by HP ascending (lower HP first)
-    const sortedMonsters = [...dungeon.monsters].sort((a, b) => a.hp - b.hp);
+    // Separate non-boss and boss monsters, sorted by sortOrder
+    const sortedMonsters = [...dungeon.monsters].sort((a, b) => a.sortOrder - b.sortOrder);
+    const nonBossMonsters = sortedMonsters.filter((m) => !m.isBoss);
+    const bossMonster = sortedMonsters.find((m) => m.isBoss) || sortedMonsters[sortedMonsters.length - 1];
 
-    // Pick monster by index (sorted by HP) or random fallback
-    const monster =
-      monsterIndex != null && monsterIndex >= 0 && monsterIndex < sortedMonsters.length
-        ? sortedMonsters[monsterIndex]
-        : sortedMonsters[Math.floor(Math.random() * sortedMonsters.length)];
+    // Boss flag → always return the boss
+    // Otherwise cycle through non-boss monsters by index
+    let monster;
+    if (isBoss) {
+      monster = bossMonster;
+    } else if (nonBossMonsters.length > 0 && monsterIndex != null && monsterIndex >= 0) {
+      monster = nonBossMonsters[monsterIndex % nonBossMonsters.length];
+    } else {
+      monster = nonBossMonsters[0] || sortedMonsters[0];
+    }
 
     // Get equipment bonuses
     const equippedItems = await this.prisma.inventory.findMany({

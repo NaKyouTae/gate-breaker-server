@@ -207,6 +207,11 @@ export class AdminController {
     return this.adminService.updateShopItem(id, dto);
   }
 
+  @Delete('shop/:id')
+  removeShopItem(@Param('id') id: string) {
+    return this.adminService.removeShopItem(id);
+  }
+
   // ============ DROP TABLES ============
 
   @Get('drop-tables')

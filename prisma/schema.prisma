@@ -94,6 +94,7 @@ model Item {
   baseAttack  Int      @default(0) @map("base_attack")
   baseDefense Int      @default(0) @map("base_defense")
   baseHp      Int      @default(0) @map("base_hp")
+  healHp      Int      @default(0) @map("heal_hp")
   description String?  @db.Text
   imageUrl    String?  @map("image_url")
   sellPrice   Int      @default(0) @map("sell_price")
@@ -114,6 +115,7 @@ model Inventory {
   isEquipped   Boolean    @default(false) @map("is_equipped")
   equippedSlot EquipSlot? @map("equipped_slot")
   quantity     Int        @default(1)
+  isDestroyed  Boolean    @default(false) @map("is_destroyed")
   createdAt    DateTime   @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id])

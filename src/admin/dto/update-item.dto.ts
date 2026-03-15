@@ -33,6 +33,11 @@ export class UpdateItemDto {
   @IsOptional()
   baseHp?: number;
 
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  healHp?: number;
+
   @IsString()
   @IsOptional()
   description?: string;

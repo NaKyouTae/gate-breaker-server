@@ -245,7 +245,7 @@ export class AdminService {
 
   async getShopItems() {
     return this.prisma.item.findMany({
-      where: { buyPrice: { gt: 0 } },
+      where: { buyPrice: { not: null, gte: 0 } },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
     });
   }
@@ -253,7 +253,14 @@ export class AdminService {
   async updateShopItem(id: string, dto: UpdateShopDto) {
     return this.prisma.item.update({
       where: { id },
-      data: { buyPrice: dto.buyPrice > 0 ? dto.buyPrice : null },
+      data: { buyPrice: dto.buyPrice >= 0 ? dto.buyPrice : null },
+    });
+  }
+
+  async removeShopItem(id: string) {
+    return this.prisma.item.update({
+      where: { id },
+      data: { buyPrice: null },
     });
   }
 
